@@ -45,7 +45,7 @@ class Admin(commands.Cog):
             await interaction.response.send_message(f"{user.mention} is no longer an admin! 👌")
 
     @admin.command(name="list")
-    async def admins(self, interaction: discord.Interaction):
+    async def list(self, interaction: discord.Interaction):
         if interaction.user != interaction.guild.owner:
             await interaction.response.send_message("Only the owner can list admins!", ephemeral=True)
             return
