@@ -4,6 +4,10 @@ import logging
 import discord
 from discord import app_commands
 from discord.ext import commands
+import sqlite3
+
+connection = sqlite3.connect("botdatabase.db")
+cursor = connection.cursor()
 
 class Core(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -33,21 +37,18 @@ class EventsCog(commands.Cog):
         if ch:
             await ch.send(f"Welcome to the server {member.mention}!")
 
+        cursor.execute("""INSERT INTO admins (guild_id, user_id)
+                          VALUES (?, ?) """, (member.guild.id, member.id))
+        connection.commit()
+        role = discord.utils.get(member.guild.roles, name="Member")
+        member = member.guild.get_member(member.id)
+        await member.add_roles(role)
+
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         ch = member.guild.system_channel
         if ch:
             await ch.send(f"{member.mention} has left :(")
-
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        if message.author.bot:
-            return
-        if message.content == "test":
-            await message.channel.send("Command worked")
-
-
-
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Core(bot))
