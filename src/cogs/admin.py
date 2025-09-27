@@ -22,7 +22,7 @@ class Admin(commands.Cog):
         else:
             await interaction.response.send_message("Banned {user}")
 
-    @admin.command(name="add")
+    @admin.command(name="add", description="Add an admin")
     async def add(self, interaction: discord.Interaction, user: discord.User):
         if interaction.user != interaction.guild.owner:
             await interaction.response.send_message("Only the owner can add other admins!", ephemeral=True)
@@ -36,7 +36,7 @@ class Admin(commands.Cog):
             await member.add_roles(role)
             await interaction.response.send_message(f"{user.mention} is now an admin! 🥳")
 
-    @admin.command(name="remove")
+    @admin.command(name="remove", description="Remove an admin")
     async def add(self, interaction: discord.Interaction, user: discord.User):
         if interaction.user != interaction.guild.owner:
             await interaction.response.send_message("Only the owner can remove admins!", ephemeral=True)
@@ -50,7 +50,7 @@ class Admin(commands.Cog):
             await member.remove_roles(role)
             await interaction.response.send_message(f"{user.mention} is no longer an admin! 👌")
 
-    @admin.command(name="list")
+    @admin.command(name="list", description="List admins")
     async def list(self, interaction: discord.Interaction):
         if interaction.user != interaction.guild.owner:
             await interaction.response.send_message("Only the owner can list admins!", ephemeral=True)
