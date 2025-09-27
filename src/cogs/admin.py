@@ -30,7 +30,7 @@ class Admin(commands.Cog):
         if interaction.user != interaction.guild.owner:
             await interaction.response.send_message("Only the owner can remove other admins!", ephemeral=True)
         else:
-            self.admins.add(user.id)
+            self.admins.remove(user.id)
             await interaction.response.send_message(f"{user.mention} is no longer an admin! 👌")
 
 
