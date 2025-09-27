@@ -44,10 +44,10 @@ class Admin(commands.Cog):
             self.admins.remove(user.id)
             await interaction.response.send_message(f"{user.mention} is no longer an admin! 👌")
 
-    @admin.command(name="admins")
+    @admin.command(name="list")
     async def admins(self, interaction: discord.Interaction):
         if interaction.user != interaction.guild.owner:
-            await interaction.response.send_message("Only the owner can list other admins!", ephemeral=True)
+            await interaction.response.send_message("Only the owner can list admins!", ephemeral=True)
             return
         else:
             guild_id = interaction.guild.id
@@ -55,7 +55,7 @@ class Admin(commands.Cog):
             admin_ids = [row[0] for row in cursor.fetchall()]
 
             if len(admin_ids) == 0:
-                await interaction.response.send_message("No admins added yet.", ephemeral=True)
+                await interaction.response.send_message("No admins were added yet.", ephemeral=True)
                 return
 
             mentions = []
