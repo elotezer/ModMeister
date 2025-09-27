@@ -31,6 +31,9 @@ class Admin(commands.Cog):
             guild_id = interaction.guild.id
             cursor.execute("""INSERT INTO admins (guild_id, user_id) VALUES (?, ?) """, (guild_id, user.id))
             connection.commit()
+            role = discord.utils.get(interaction.guild.roles, name="Admin")
+            member = interaction.guild.get_member(user.id)
+            await member.add_roles(role)
             await interaction.response.send_message(f"{user.mention} is now an admin! 🥳")
 
     @admin.command(name="remove")
@@ -42,6 +45,9 @@ class Admin(commands.Cog):
             guild_id = interaction.guild.id
             cursor.execute("""DELETE FROM admins WHERE guild_id = ? AND user_id = ?""", (guild_id, user.id))
             connection.commit()
+            role = discord.utils.get(interaction.guild.roles, name="Admin")
+            member = interaction.guild.get_member(user.id)
+            await member.remove_roles(role)
             await interaction.response.send_message(f"{user.mention} is no longer an admin! 👌")
 
     @admin.command(name="list")
