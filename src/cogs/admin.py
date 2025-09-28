@@ -27,11 +27,19 @@ class Admin(commands.Cog):
     @admin.command(name="ban", description="Ban a member")
     async def ban(self, interaction: discord.Interaction, user: discord.User, reason: str):
         if not interaction.user.guild_permissions.kick_members:
-            await interaction.response.send_message("You don't have the permission to ban members!")
+            await interaction.response.send_message("You don't have permission to ban members!")
             return
         else:
             await user.ban(reason=reason)
             await interaction.response.send_message(f"{user.mention} has been banned 💥\nReason: {reason}")
+
+    @admin.command(name="unban", description="Unban a member")
+    async def unban(self, interaction: discord.Interaction, user: discord.User):
+        if not interaction.user.guild_permissions.ban_members:
+            await interaction.response.send_message("You don't have permission to unban members!")
+        else:
+            await interaction.guild.unban(user)
+            await interaction.response.send_message(f"{user.mention} has been unbanned! 🙌")
 
     @admin.command(name="add", description="Add an admin")
     async def add(self, interaction: discord.Interaction, user: discord.User):
