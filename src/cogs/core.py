@@ -37,8 +37,9 @@ class EventsCog(commands.Cog):
         if ch:
             await ch.send(f"Welcome to the server {member.mention}!")
 
-        cursor.execute("""INSERT INTO admins (guild_id, user_id)
-                          VALUES (?, ?) """, (member.guild.id, member.id))
+        cursor.execute("""CREATE TABLE IF NOT EXISTS members (guild_id INT, user_id INT)""")
+        connection.commit()
+        cursor.execute("""INSERT INTO members (guild_id, user_id) VALUES (?, ?)""", (member.guild.id, member.id))
         connection.commit()
         role = discord.utils.get(member.guild.roles, name="Member")
         member = member.guild.get_member(member.id)
