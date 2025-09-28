@@ -23,7 +23,7 @@ class Core(commands.Cog):
     async def help(self, interaction: discord.Interaction):
         await interaction.response.send_message(
             """**Basic commands**\n`/ping` Checks if the bot is alive or not\n`/echo` Sends you back the same text you provided as parameter\n
-**Admin commands**\n`/admin add` Add admin role to user\n`/admin remove` Remove admin role from user\n`/admin ban` Ban user\n`/admin list` List of admins\n`/admin ban` Ban a member\n`/admin unban` Unban a member\n`/admin mute` Mute a member for a specified minutes (Timeout)\n`/admin unmute` Mute a member for a specified minutes (Timeout)"""
+**Admin commands**\n`/admin add` Add admin role to user\n`/admin remove` Remove admin role from user\n`/admin list` List of admins\n`/admin ban` Ban a member\n`/admin unban` Unban a member\n`/admin mute` Mute a member for a specified minutes (Timeout)\n`/admin unmute` Mute a member for a specified minutes (Timeout)"""
         )
 
 class EventsCog(commands.Cog):
