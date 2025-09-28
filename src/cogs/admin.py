@@ -22,11 +22,16 @@ class Admin(commands.Cog):
             return
         else:
             await user.kick(reason=reason)
-            await interaction.response.send_message(f"{user.mention} has been kicked. Reason: {reason}")
+            await interaction.response.send_message(f"{user.mention} has been kicked 🪽\nReason: {reason}")
 
-    @admin.command(name="ban")
-    async def ban(self, interaction: discord.Interaction):
-        pass
+    @admin.command(name="ban", description="Ban a member")
+    async def ban(self, interaction: discord.Interaction, user: discord.User, reason: str):
+        if not interaction.user.guild_permissions.kick_members:
+            await interaction.response.send_message("You don't have the permission to ban members!")
+            return
+        else:
+            await user.ban(reason=reason)
+            await interaction.response.send_message(f"{user.mention} has been banned 💥\nReason: {reason}")
 
     @admin.command(name="add", description="Add an admin")
     async def add(self, interaction: discord.Interaction, user: discord.User):
