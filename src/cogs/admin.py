@@ -1,10 +1,8 @@
 from datetime import timedelta
-
 from discord import app_commands
 from discord.ext import commands
 import discord
 import sqlite3
-import datetime
 
 connection = sqlite3.connect("botdatabase.db")
 cursor = connection.cursor()
@@ -15,7 +13,6 @@ class Admin(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-
     admin = app_commands.Group(name="admin", description="Commands for administrators")
 
     @admin.command(name="kick", description="Kick a member")
@@ -25,9 +22,11 @@ class Admin(commands.Cog):
         if not fetch:
             await interaction.response.send_message("You don't have the permission to kick members!")
             return
+
         elif fetch:
             await user.kick(reason=reason)
             await interaction.response.send_message(f"{user.mention} has been kicked 🪽\nReason: {reason}")
+
         elif interaction.user.id == interaction.guild.owner_id:
             await user.kick(reason=reason)
             await interaction.response.send_message(f"{user.mention} has been kicked 🪽\nReason: {reason}")
@@ -38,16 +37,21 @@ class Admin(commands.Cog):
                           From admins
                           Where guild_id = ?
                             And user_id = ?""", (interaction.guild_id, interaction.user.id))
+
         fetch = cursor.fetchone()
+
         if not fetch:
             await interaction.response.send_message("You don't have permission to ban members!")
             return
+
         elif fetch:
             await user.ban(reason=reason)
             await interaction.response.send_message(f"{user.mention} has been banned 💥\nReason: {reason}")
+
         elif interaction.user.id == interaction.guild.owner_id:
             await user.ban(reason=reason)
             await interaction.response.send_message(f"{user.mention} has been banned 💥\nReason: {reason}")
+
 
     @admin.command(name="unban", description="Unban a member")
     async def unban(self, interaction: discord.Interaction, user: discord.User):
@@ -58,9 +62,11 @@ class Admin(commands.Cog):
         fetch = cursor.fetchone()
         if not fetch:
             await interaction.response.send_message("You don't have permission to unban members!")
+
         elif fetch:
             await interaction.guild.unban(user)
             await interaction.response.send_message(f"{user.mention} has been unbanned! 🙌")
+
         elif interaction.user.id == interaction.guild.owner_id:
             await interaction.guild.unban(user)
             await interaction.response.send_message(f"{user.mention} has been unbanned! 🙌")
@@ -71,15 +77,19 @@ class Admin(commands.Cog):
                           From admins
                           Where guild_id = ?
                             And user_id = ?""", (interaction.guild_id, interaction.user.id))
+
         fetch = cursor.fetchone()
+
         if not fetch:
             interaction.response.send_message("You don't have permission to mute members!")
             return
+
         elif fetch:
             muted_until = discord.utils.utcnow() + timedelta(minutes = minutes)
             await user.timeout(muted_until, reason = reason)
             await interaction.response.send_message(f"{user.mention} has been muted for {minutes} minutes 🔇\nReason: {reason}")
             return
+
         elif interaction.user.id == interaction.guild.owner_id:
             muted_until = discord.utils.utcnow() + timedelta(minutes=minutes)
             await user.timeout(muted_until, reason=reason)
@@ -93,14 +103,17 @@ class Admin(commands.Cog):
                           Where guild_id = ?
                             And user_id = ?""", (interaction.guild_id, interaction.user.id))
         fetch = cursor.fetchone()
+
         if not fetch:
             interaction.response.send_message("You don't have permission to unmute members!")
             return
+
         elif fetch:
             await user.timeout(None)
             await interaction.response.send_message(
                 f"{user.mention} has been unmuted 🔊")
             return
+
         elif interaction.guild.owner_id == interaction.user.id:
             await user.timeout(None)
             await interaction.response.send_message(
@@ -113,12 +126,14 @@ class Admin(commands.Cog):
         if interaction.user != interaction.guild.owner:
             await interaction.response.send_message("Only the owner can add other admins!", ephemeral=True)
             return
+
         else:
             guild_id = interaction.guild.id
             cursor.execute("""INSERT INTO admins (guild_id, user_id) VALUES (?, ?) """, (guild_id, user.id))
             connection.commit()
             role = discord.utils.get(interaction.guild.roles, name="Admin")
             member = interaction.guild.get_member(user.id)
+
             await member.add_roles(role)
             await interaction.response.send_message(f"{user.mention} is now an admin! 🥳")
 
@@ -127,12 +142,14 @@ class Admin(commands.Cog):
         if interaction.user != interaction.guild.owner:
             await interaction.response.send_message("Only the owner can remove admins!", ephemeral=True)
             return
+
         else:
             guild_id = interaction.guild.id
             cursor.execute("""DELETE FROM admins WHERE guild_id = ? AND user_id = ?""", (guild_id, user.id))
             connection.commit()
             role = discord.utils.get(interaction.guild.roles, name="Admin")
             member = interaction.guild.get_member(user.id)
+
             await member.remove_roles(role)
             await interaction.response.send_message(f"{user.mention} is no longer an admin! 👌")
 
@@ -143,12 +160,15 @@ class Admin(commands.Cog):
                           Where guild_id = ?
                             And user_id = ?""", (interaction.guild_id, interaction.user.id))
         fetch = cursor.fetchone()
+
         if not fetch:
             await interaction.response.send_message("You don't have permission to list admins!", ephemeral=True)
             return
+
         elif fetch or interaction.user.id == interaction.guild.owner:
             guild_id = interaction.guild.id
             cursor.execute("SELECT user_id FROM admins WHERE guild_id = ?", (guild_id,))
+
             admin_ids = [row[0] for row in cursor.fetchall()]
 
             if len(admin_ids) == 0:
@@ -156,15 +176,17 @@ class Admin(commands.Cog):
                 return
 
             mentions = []
+
             for uid in admin_ids:
                 member = interaction.guild.get_member(uid)
+
                 if member:
                     mentions.append(member.mention)
+
                 else:
                     mentions.append(f"<@{uid}>")
 
             await interaction.response.send_message("List of admins: " + ", ".join(mentions), ephemeral=True)
-
 
 
 async def setup(bot: commands.Bot):
