@@ -15,12 +15,18 @@ class Admin(commands.Cog):
 
     admin = app_commands.Group(name="admin", description="Commands for administrators")
 
+    @admin.command(name="kick", description="Kick a member")
+    async def kick(self, interaction: discord.Interaction, user: discord.User, reason: str):
+        if not interaction.user.guild_permissions.kick_members:
+            await interaction.response.send_message("You don't have the permission to kick members!")
+            return
+        else:
+            await user.kick(reason=reason)
+            await interaction.response.send_message(f"{user.mention} has been kicked. Reason: {reason}")
+
     @admin.command(name="ban")
     async def ban(self, interaction: discord.Interaction):
-        if interaction.user != interaction.guild.owner or interaction.user not in self.admins:
-            await interaction.response.send_message("Access denied!", ephemeral=True)
-        else:
-            await interaction.response.send_message("Banned {user}")
+        pass
 
     @admin.command(name="add", description="Add an admin")
     async def add(self, interaction: discord.Interaction, user: discord.User):
