@@ -1,7 +1,10 @@
+from datetime import timedelta
+
 from discord import app_commands
 from discord.ext import commands
 import discord
 import sqlite3
+import datetime
 
 connection = sqlite3.connect("botdatabase.db")
 cursor = connection.cursor()
@@ -40,6 +43,28 @@ class Admin(commands.Cog):
         else:
             await interaction.guild.unban(user)
             await interaction.response.send_message(f"{user.mention} has been unbanned! 🙌")
+
+    @admin.command(name="mute", description="Mute a member for a specific minutes (Timeout)")
+    async def mute(self, interaction: discord.Interaction, user: discord.User, minutes: int, reason: str):
+        if not interaction.user.guild_permissions.moderate_members:
+            interaction.response.send_message("You don't have permission to mute members!")
+            return
+        else:
+            muted_until = discord.utils.utcnow() + timedelta(minutes = minutes)
+            await user.timeout(muted_until, reason = reason)
+            await interaction.response.send_message(f"{user.mention} has been muted for {minutes} minutes 🔇\nReason: {reason}")
+
+    @admin.command(name="unmute", description="Unmute a member")
+    async def unmute(self, interaction: discord.Interaction, user: discord.User):
+        if not interaction.user.guild_permissions.moderate_members:
+            interaction.response.send_message("You don't have permission to unmute members!")
+            return
+        else:
+            await user.timeout(None)
+            await interaction.response.send_message(
+                f"{user.mention} has been unmuted 🔊")
+
+
 
     @admin.command(name="add", description="Add an admin")
     async def add(self, interaction: discord.Interaction, user: discord.User):
