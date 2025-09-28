@@ -31,24 +31,37 @@ class EventsCog(commands.Cog):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member):
         ch = member.guild.system_channel
         if ch:
             await ch.send(f"Welcome to the server {member.mention}!")
 
         cursor.execute("""CREATE TABLE IF NOT EXISTS members (guild_id INT, user_id INT)""")
         connection.commit()
+
         cursor.execute("""INSERT INTO members (guild_id, user_id) VALUES (?, ?)""", (member.guild.id, member.id))
         connection.commit()
+
         role = discord.utils.get(member.guild.roles, name="Member")
-        member = member.guild.get_member(member.id)
         await member.add_roles(role)
 
     @commands.Cog.listener()
-    async def on_member_remove(self, member):
+    async def on_member_remove(self, member: discord.Member):
         ch = member.guild.system_channel
         if ch:
             await ch.send(f"{member.mention} has left :(")
+        cursor.execute("""DELETE FROM members where guild_id = ? and user_id = ?""", (member.guild.id, member.id))
+        connection.commit()
+
+        admin_role = discord.utils.get(member.guild.roles, name="Admin")
+
+        cursor.execute("SELECT 1 FROM admins WHERE guild_id = ? AND user_id = ?", (member.guild.id, member.id))
+        if cursor.fetchone() is not None:
+            cursor.execute("""DELETE
+                              FROM admins
+                              where guild_id = ?
+                                and user_id = ?""", (member.guild.id, member.id))
+            connection.commit()
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Core(bot))

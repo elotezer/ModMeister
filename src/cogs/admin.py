@@ -20,50 +20,92 @@ class Admin(commands.Cog):
 
     @admin.command(name="kick", description="Kick a member")
     async def kick(self, interaction: discord.Interaction, user: discord.User, reason: str):
-        if not interaction.user.guild_permissions.kick_members:
+        cursor.execute("""Select 1 From admins Where guild_id = ? And user_id = ?""", (interaction.guild_id, interaction.user.id))
+        fetch = cursor.fetchone()
+        if not fetch:
             await interaction.response.send_message("You don't have the permission to kick members!")
             return
-        else:
+        elif fetch:
+            await user.kick(reason=reason)
+            await interaction.response.send_message(f"{user.mention} has been kicked 🪽\nReason: {reason}")
+        elif interaction.user.id == interaction.guild.owner_id:
             await user.kick(reason=reason)
             await interaction.response.send_message(f"{user.mention} has been kicked 🪽\nReason: {reason}")
 
     @admin.command(name="ban", description="Ban a member")
     async def ban(self, interaction: discord.Interaction, user: discord.User, reason: str):
-        if not interaction.user.guild_permissions.kick_members:
+        cursor.execute("""Select 1
+                          From admins
+                          Where guild_id = ?
+                            And user_id = ?""", (interaction.guild_id, interaction.user.id))
+        fetch = cursor.fetchone()
+        if not fetch:
             await interaction.response.send_message("You don't have permission to ban members!")
             return
-        else:
+        elif fetch:
+            await user.ban(reason=reason)
+            await interaction.response.send_message(f"{user.mention} has been banned 💥\nReason: {reason}")
+        elif interaction.user.id == interaction.guild.owner_id:
             await user.ban(reason=reason)
             await interaction.response.send_message(f"{user.mention} has been banned 💥\nReason: {reason}")
 
     @admin.command(name="unban", description="Unban a member")
     async def unban(self, interaction: discord.Interaction, user: discord.User):
-        if not interaction.user.guild_permissions.ban_members:
+        cursor.execute("""Select 1
+                          From admins
+                          Where guild_id = ?
+                            And user_id = ?""", (interaction.guild_id, interaction.user.id))
+        fetch = cursor.fetchone()
+        if not fetch:
             await interaction.response.send_message("You don't have permission to unban members!")
-        else:
+        elif fetch:
+            await interaction.guild.unban(user)
+            await interaction.response.send_message(f"{user.mention} has been unbanned! 🙌")
+        elif interaction.user.id == interaction.guild.owner_id:
             await interaction.guild.unban(user)
             await interaction.response.send_message(f"{user.mention} has been unbanned! 🙌")
 
     @admin.command(name="mute", description="Mute a member for a specific minutes (Timeout)")
     async def mute(self, interaction: discord.Interaction, user: discord.User, minutes: int, reason: str):
-        if not interaction.user.guild_permissions.moderate_members:
+        cursor.execute("""Select 1
+                          From admins
+                          Where guild_id = ?
+                            And user_id = ?""", (interaction.guild_id, interaction.user.id))
+        fetch = cursor.fetchone()
+        if not fetch:
             interaction.response.send_message("You don't have permission to mute members!")
             return
-        else:
+        elif fetch:
             muted_until = discord.utils.utcnow() + timedelta(minutes = minutes)
             await user.timeout(muted_until, reason = reason)
             await interaction.response.send_message(f"{user.mention} has been muted for {minutes} minutes 🔇\nReason: {reason}")
+            return
+        elif interaction.user.id == interaction.guild.owner_id:
+            muted_until = discord.utils.utcnow() + timedelta(minutes=minutes)
+            await user.timeout(muted_until, reason=reason)
+            await interaction.response.send_message(f"{user.mention} has been muted for {minutes} minutes 🔇\nReason: {reason}")
+            return
 
     @admin.command(name="unmute", description="Unmute a member")
     async def unmute(self, interaction: discord.Interaction, user: discord.User):
-        if not interaction.user.guild_permissions.moderate_members:
+        cursor.execute("""Select 1
+                          From admins
+                          Where guild_id = ?
+                            And user_id = ?""", (interaction.guild_id, interaction.user.id))
+        fetch = cursor.fetchone()
+        if not fetch:
             interaction.response.send_message("You don't have permission to unmute members!")
             return
-        else:
+        elif fetch:
             await user.timeout(None)
             await interaction.response.send_message(
                 f"{user.mention} has been unmuted 🔊")
-
+            return
+        elif interaction.guild.owner_id == interaction.user.id:
+            await user.timeout(None)
+            await interaction.response.send_message(
+                f"{user.mention} has been unmuted 🔊")
+            return
 
 
     @admin.command(name="add", description="Add an admin")
@@ -96,10 +138,15 @@ class Admin(commands.Cog):
 
     @admin.command(name="list", description="List admins")
     async def list(self, interaction: discord.Interaction):
-        if interaction.user != interaction.guild.owner:
-            await interaction.response.send_message("Only the owner can list admins!", ephemeral=True)
+        cursor.execute("""Select 1
+                          From admins
+                          Where guild_id = ?
+                            And user_id = ?""", (interaction.guild_id, interaction.user.id))
+        fetch = cursor.fetchone()
+        if not fetch:
+            await interaction.response.send_message("You don't have permission to list admins!", ephemeral=True)
             return
-        else:
+        elif fetch or interaction.user.id == interaction.guild.owner:
             guild_id = interaction.guild.id
             cursor.execute("SELECT user_id FROM admins WHERE guild_id = ?", (guild_id,))
             admin_ids = [row[0] for row in cursor.fetchall()]
