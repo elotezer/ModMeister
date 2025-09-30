@@ -188,6 +188,35 @@ class Admin(commands.Cog):
 
             await interaction.response.send_message("List of admins: " + ", ".join(mentions), ephemeral=True)
 
+    @admin.command(name="new_text_ch", description="Create new text channel")
+    async def new_text_ch(self, interaction: discord.Interaction, ch_name: str, ch_cat: discord.CategoryChannel):
+        cursor.execute("""select 1 
+                          from admins 
+                          where guild_id = ? and user_id = ?""",
+                       (interaction.guild_id, interaction.user.id))
+        fetch = cursor.fetchone()
+
+        if fetch:
+            await interaction.guild.create_text_channel(ch_name, category=ch_cat)
+            await interaction.response.send_message(f"Text channel \"{ch_name}\" has been created ✅")
+        elif not fetch:
+            await interaction.response.send_message("You don't have permission to create text channels ❌")
+
+
+    @admin.command(name="del_text_ch", description="Delete text channel")
+    async def del_text_ch(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        cursor.execute("""select 1 
+                            from admins 
+                            where guild_id = ? and user_id = ?""",
+                        (interaction.guild_id, interaction.user.id))
+        fetch = cursor.fetchone()
+
+        if fetch:
+            await channel.delete()
+            await interaction.response.send_message(f"Text channel \"{channel.name}\" has been deleted ✅")
+        elif not fetch:
+            await interaction.response.send_message("You don't have permission to delete text channels ❌")
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Admin(bot))

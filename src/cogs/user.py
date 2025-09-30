@@ -21,5 +21,8 @@ class User(commands.Cog):
         await interaction.response.send_message(f"Your random number: {rolled:.6f}")
 
 
+
+
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(User(bot))
