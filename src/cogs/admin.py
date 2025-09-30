@@ -198,7 +198,7 @@ class Admin(commands.Cog):
 
         if fetch:
             await interaction.guild.create_text_channel(ch_name, category=ch_cat)
-            await interaction.response.send_message(f"Text channel \"{ch_name}\" has been created ✅")
+            await interaction.response.send_message(f"**[Text Channel]** \"{ch_name}\" has been created ✅")
         elif not fetch:
             await interaction.response.send_message("You don't have permission to create text channels ❌")
 
@@ -213,9 +213,39 @@ class Admin(commands.Cog):
 
         if fetch:
             await channel.delete()
-            await interaction.response.send_message(f"Text channel \"{channel.name}\" has been deleted ✅")
+            await interaction.response.send_message(f"**[Text Channel]** \"{channel.name}\" has been deleted ✅")
         elif not fetch:
             await interaction.response.send_message("You don't have permission to delete text channels ❌")
+
+    @admin.command(name="new_voice_ch", description="Create new voice channel")
+    async def new_voice_ch(self, interaction: discord.Interaction, ch_name: str, ch_cat: discord.CategoryChannel):
+        cursor.execute("""select 1
+                          from admins
+                          where guild_id = ?
+                            and user_id = ?""",
+                       (interaction.guild_id, interaction.user.id))
+        fetch = cursor.fetchone()
+
+        if fetch:
+            await interaction.guild.create_voice_channel(ch_name, category=ch_cat)
+            await interaction.response.send_message(f"**[Voice Channel]** \"{ch_name}\" has been created ✅")
+        elif not fetch:
+            await interaction.response.send_message("You don't have permission to create voice channels ❌")
+
+    @admin.command(name="del_voice_ch", description="Delete voice channel")
+    async def del_voice_ch(self, interaction: discord.Interaction, ch_name: discord.VoiceChannel):
+        cursor.execute("""select 1
+                          from admins
+                          where guild_id = ?
+                            and user_id = ?""",
+                       (interaction.guild_id, interaction.user.id))
+        fetch = cursor.fetchone()
+
+        if fetch:
+            await ch_name.delete()
+            await interaction.response.send_message(f"**[Voice Channel]** \"{ch_name}\" has been deleted ✅")
+        elif not fetch:
+            await interaction.response.send_message("You don't have permission to delete voice channels ❌")
 
 
 async def setup(bot: commands.Bot):
