@@ -22,7 +22,7 @@ class Bot(commands.Bot):
     async def setup_hook(self) -> None:
         await self.load_extension("cogs.core")
         await self.load_extension("cogs.admin")
-        #await self.load_extension("cogs.fun")
+        await self.load_extension("cogs.user")
 
         if GUILD and GUILD.isdigit():
             guild = discord.Object(id=int(GUILD))
