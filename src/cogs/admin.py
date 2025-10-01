@@ -247,6 +247,23 @@ class Admin(commands.Cog):
         elif not fetch:
             await interaction.response.send_message("You don't have permission to delete voice channels ❌")
 
+    @admin.command(name="new_category", description="Create new category")
+    async def new_category(self, interaction: discord.Interaction, name: str):
+        cursor.execute("""select 1
+                          from admins
+                          where guild_id = ?
+                            and user_id = ?""",
+                       (interaction.guild_id, interaction.user.id))
+        fetch = cursor.fetchone()
+
+        if fetch:
+            await interaction.guild.create_category(name=name)
+            await interaction.response.send_message(f"**[Create Category]** \"{name}\" has been created ✅")
+        elif not fetch:
+            await interaction.response.send_message("You don't have permission to create categories! ❌")
+
+
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Admin(bot))
