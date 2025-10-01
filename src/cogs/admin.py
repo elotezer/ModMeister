@@ -262,6 +262,21 @@ class Admin(commands.Cog):
         elif not fetch:
             await interaction.response.send_message("You don't have permission to create categories! ❌")
 
+    @admin.command(name="del_category", description="Delete category")
+    async def new_category(self, interaction: discord.Interaction, category: discord.CategoryChannel):
+        cursor.execute("""select 1
+                          from admins
+                          where guild_id = ?
+                            and user_id = ?""",
+                       (interaction.guild_id, interaction.user.id))
+        fetch = cursor.fetchone()
+
+        if fetch:
+            await category.delete()
+            await interaction.response.send_message(f"**[Create Category]** \"{category.name}\" has been deleted ✅")
+        elif not fetch:
+            await interaction.response.send_message("You don't have permission to delete categories! ❌")
+
 
 
 
