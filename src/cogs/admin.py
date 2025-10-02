@@ -277,7 +277,29 @@ class Admin(commands.Cog):
         elif not fetch:
             await interaction.response.send_message("You don't have permission to delete categories! ❌")
 
+    @admin.command(name="new_private_category")
+    async def new_private_category(self, interaction: discord.Interaction, name: str):
+        cursor.execute("""select 1
+                          from admins
+                          where guild_id = ?
+                            and user_id = ?""",
+                       (interaction.guild_id, interaction.user.id))
+        fetch = cursor.fetchone()
 
+        if fetch:
+            guild = interaction.guild
+            admin_role = discord.utils.get(guild.roles, name="Admin")
+
+            overwrites = {
+                guild.default_role: discord.PermissionOverwrite(view_channel=False),
+                admin_role: discord.PermissionOverwrite(view_channel=True)
+            }
+
+            await guild.create_category(name, overwrites=overwrites)
+            await interaction.response.send_message(f"Private category `{name}` created ✅ (Admins only)")
+
+        elif not fetch:
+            await interaction.response.send_message(f"You don't have permission to create private category ❌")
 
 
 async def setup(bot: commands.Bot):
