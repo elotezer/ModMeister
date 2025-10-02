@@ -1,8 +1,16 @@
 from discord import app_commands
 from discord.ext import commands
 import discord
-import sqlite3
 import random
+import os
+
+from dotenv import load_dotenv
+from openai import OpenAI
+import dotenv
+
+dotenv.load_dotenv()
+
+GPT_KEY = os.getenv("GPT_KEY")
 
 class User(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -20,7 +28,13 @@ class User(commands.Cog):
         rolled = random.random()
         await interaction.response.send_message(f"Your random number: {rolled:.6f}")
 
-
+    @app_commands.command(name="gpt", description="Ask ChatGPT")
+    async def gpt(self, interaction: discord.Interaction, prompt: str):
+        ai_client = OpenAI(api_key=GPT_KEY)
+        resp = ai_client.responses.create(model="gpt-4o-mini",
+                                          input=prompt,
+                                          store=True)
+        await interaction.response.send_message(f"**[ChatGPT]** `{resp.output_text}`")
 
 
 
