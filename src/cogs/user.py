@@ -34,7 +34,7 @@ class User(commands.Cog):
         resp = ai_client.responses.create(model="gpt-4o-mini",
                                           input=prompt,
                                           store=True)
-        await interaction.response.send_message(f"**[ChatGPT]** `{resp.output_text}`")
+        await interaction.response.send_message(f"**[ChatGPT]** `{resp.output_text.strip()}`")
 
 
 
