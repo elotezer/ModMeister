@@ -31,10 +31,11 @@ class User(commands.Cog):
     @app_commands.command(name="gpt", description="Ask ChatGPT")
     async def gpt(self, interaction: discord.Interaction, prompt: str):
         ai_client = OpenAI(api_key=GPT_KEY)
+        await interaction.response.defer(thinking=True)
         resp = ai_client.responses.create(model="gpt-4o-mini",
                                           input=prompt,
                                           store=True)
-        await interaction.response.send_message(f"**[ChatGPT]** `{resp.output_text.strip()}`")
+        await interaction.followup.send(f"**[ChatGPT]** `{resp.output_text.strip()}`")
 
 
 
