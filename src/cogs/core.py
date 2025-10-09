@@ -3,6 +3,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import sqlite3
+import textwrap
 
 connection = sqlite3.connect("botdatabase.db")
 cursor = connection.cursor()
@@ -21,14 +22,15 @@ class Core(commands.Cog):
 
     @app_commands.command(name="help", description="List of the bot's commands")
     async def help(self, interaction: discord.Interaction):
-        await interaction.response.send_message(
-            """**Member commands**
+        help_text = textwrap.dedent("""\
+        **Member commands**
             `/ping` Checks if the bot is alive or not
             `/echo` Sends you back the same text you provided as parameter
             `/roll` Random number between a provided range
             `/roll_f` Random number between 0 and 1
             `/gpt` Prompt ChatGPT
-            **Admin commands**
+            
+        **Admin commands**
             `/admin add` Add admin role to user
             `/admin remove` Remove admin role from user
             `/admin list` List of admins
@@ -44,8 +46,8 @@ class Core(commands.Cog):
             `/admin new_category` Create new category
             `/admin new_private_category` Pivate category (Every new channel in this category will be private)
             `/del_category` Delete category
-            """
-        )
+        """)
+        await interaction.response.send_message(help_text)
 
 class EventsCog(commands.Cog):
     def __init__(self, bot):
