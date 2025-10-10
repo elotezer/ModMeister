@@ -23,16 +23,28 @@ class Admin(commands.Cog):
         cursor.execute("""Select 1 From admins Where guild_id = ? And user_id = ?""", (interaction.guild_id, interaction.user.id))
         fetch = cursor.fetchone()
         if not fetch:
-            await interaction.response.send_message("**[ALERT]** You don't have the permission to kick members!")
+            embed = discord.Embed(
+                title="**[ALERT]** You don't have the permission to kick members! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
             return
 
         elif fetch:
             await user.kick(reason=reason)
-            await interaction.response.send_message(f"{user.mention} has been kicked 🪽\nReason: {reason}")
+            embed = discord.Embed(
+                title=f"{user.display_name} has been kicked 🪽\nReason: {reason}",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
 
         elif interaction.user.id == interaction.guild.owner_id:
             await user.kick(reason=reason)
-            await interaction.response.send_message(f"{user.mention} has been kicked 🪽\nReason: {reason}")
+            embed = discord.Embed(
+                title=f"{user.display_name} has been kicked 🪽\nReason: {reason}",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
 
     @admin.command(name="ban", description="Ban a member")
     async def ban(self, interaction: discord.Interaction, user: discord.User, reason: str):
@@ -44,16 +56,28 @@ class Admin(commands.Cog):
         fetch = cursor.fetchone()
 
         if not fetch:
-            await interaction.response.send_message("**[ALERT]** You don't have permission to ban members!")
+            embed = discord.Embed(
+                title="**[ALERT]** You don't have the permission to ban members! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
             return
 
         elif fetch:
             await user.ban(reason=reason)
-            await interaction.response.send_message(f"{user.mention} has been banned 💥\nReason: {reason}")
+            embed = discord.Embed(
+                title=f"{user.mention} has been banned 💥\nReason: {reason}",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
 
         elif interaction.user.id == interaction.guild.owner_id:
             await user.ban(reason=reason)
-            await interaction.response.send_message(f"{user.mention} has been banned 💥\nReason: {reason}")
+            embed = discord.Embed(
+                title=f"{user.mention} has been banned 💥\nReason: {reason}",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
 
 
     @admin.command(name="unban", description="Unban a member")
@@ -64,15 +88,28 @@ class Admin(commands.Cog):
                             And user_id = ?""", (interaction.guild_id, interaction.user.id))
         fetch = cursor.fetchone()
         if not fetch:
-            await interaction.response.send_message("**[ALERT]** You don't have permission to unban members!")
+            embed = discord.Embed(
+                title="**[ALERT]** You don't have the permission to unban members! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
+            return
 
         elif fetch:
             await interaction.guild.unban(user)
-            await interaction.response.send_message(f"{user.mention} has been unbanned! 🙌")
+            embed = discord.Embed(
+                title=f"{user.mention} has been unbanned! 🙌",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
 
         elif interaction.user.id == interaction.guild.owner_id:
             await interaction.guild.unban(user)
-            await interaction.response.send_message(f"{user.mention} has been unbanned! 🙌")
+            embed = discord.Embed(
+                title=f"{user.mention} has been unbanned! 🙌",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
 
     @admin.command(name="mute", description="Mute a member for a specific minutes (Timeout)")
     async def mute(self, interaction: discord.Interaction, user: discord.User, minutes: int, reason: str):
@@ -84,19 +121,31 @@ class Admin(commands.Cog):
         fetch = cursor.fetchone()
 
         if not fetch:
-            interaction.response.send_message("**[ALERT]** You don't have permission to mute members!")
+            embed = discord.Embed(
+                title="**[ALERT]** You don't have the permission to mute members! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
             return
 
         elif fetch:
             muted_until = discord.utils.utcnow() + timedelta(minutes = minutes)
             await user.timeout(muted_until, reason = reason)
-            await interaction.response.send_message(f"{user.mention} has been muted for {minutes} minutes 🔇\nReason: {reason}")
+            embed = discord.Embed(
+                title=f"{user.mention} has been muted for {minutes} minutes 🔇\nReason: {reason}",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
             return
 
         elif interaction.user.id == interaction.guild.owner_id:
             muted_until = discord.utils.utcnow() + timedelta(minutes=minutes)
             await user.timeout(muted_until, reason=reason)
-            await interaction.response.send_message(f"{user.mention} has been muted for {minutes} minutes 🔇\nReason: {reason}")
+            embed = discord.Embed(
+                title=f"{user.mention} has been muted for {minutes} minutes 🔇\nReason: {reason}",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
             return
 
     @admin.command(name="unmute", description="Unmute a member")
@@ -108,26 +157,40 @@ class Admin(commands.Cog):
         fetch = cursor.fetchone()
 
         if not fetch:
-            interaction.response.send_message("**[ALERT]** You don't have permission to unmute members!")
+            embed = discord.Embed(
+                title="**[ALERT]** You don't have the permission to unmute members! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
             return
 
         elif fetch:
             await user.timeout(None)
-            await interaction.response.send_message(
-                f"{user.mention} has been unmuted 🔊")
+            embed = discord.Embed(
+                title=f"{user.name} has been unmuted ✅",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
             return
 
         elif interaction.guild.owner_id == interaction.user.id:
             await user.timeout(None)
-            await interaction.response.send_message(
-                f"{user.mention} has been unmuted 🔊")
+            embed = discord.Embed(
+                title=f"{user.name} has been unmuted ✅",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
             return
 
 
     @admin.command(name="add", description="Add an admin")
     async def add(self, interaction: discord.Interaction, user: discord.User):
         if interaction.user != interaction.guild.owner:
-            await interaction.response.send_message("**[ALERT]** Only the owner can add other admins!", ephemeral=True)
+            embed = discord.Embed(
+                title="**[ALERT]** Only the owner can add admins! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
             return
 
         else:
@@ -138,12 +201,20 @@ class Admin(commands.Cog):
             member = interaction.guild.get_member(user.id)
 
             await member.add_roles(role)
-            await interaction.response.send_message(f"{user.mention} is now an admin! 🥳")
+            embed = discord.Embed(
+                title=f"{user.name} is now an Admin! 🥳",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
 
     @admin.command(name="remove", description="Remove an admin")
     async def add(self, interaction: discord.Interaction, user: discord.User):
         if interaction.user != interaction.guild.owner:
-            await interaction.response.send_message("**[ALERT]** Only the owner can remove admins!", ephemeral=True)
+            embed = discord.Embed(
+                title="**[ALERT]** Only the owner can remove admins! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
             return
 
         else:
@@ -154,42 +225,11 @@ class Admin(commands.Cog):
             member = interaction.guild.get_member(user.id)
 
             await member.remove_roles(role)
-            await interaction.response.send_message(f"{user.mention} is no longer an admin! 👌")
-
-    @admin.command(name="list", description="List admins")
-    async def list(self, interaction: discord.Interaction):
-        cursor.execute("""Select 1
-                          From admins
-                          Where guild_id = ?
-                            And user_id = ?""", (interaction.guild_id, interaction.user.id))
-        fetch = cursor.fetchone()
-
-        if not fetch:
-            await interaction.response.send_message("**[ALERT]** You don't have permission to list admins!", ephemeral=True)
-            return
-
-        elif fetch or interaction.user.id == interaction.guild.owner:
-            guild_id = interaction.guild.id
-            cursor.execute("SELECT user_id FROM admins WHERE guild_id = ?", (guild_id,))
-
-            admin_ids = [row[0] for row in cursor.fetchall()]
-
-            if len(admin_ids) == 0:
-                await interaction.response.send_message("**[ALERT]** No admins were added yet.", ephemeral=True)
-                return
-
-            mentions = []
-
-            for uid in admin_ids:
-                member = interaction.guild.get_member(uid)
-
-                if member:
-                    mentions.append(member.mention)
-
-                else:
-                    mentions.append(f"<@{uid}>")
-
-            await interaction.response.send_message("List of admins: " + ", ".join(mentions), ephemeral=True)
+            embed = discord.Embed(
+                title=f"{user.name} is no longer an Admin ✅",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
 
     @admin.command(name="new_text_ch", description="Create new text channel")
     async def new_text_ch(self, interaction: discord.Interaction, ch_name: str, ch_cat: discord.CategoryChannel):
@@ -201,9 +241,18 @@ class Admin(commands.Cog):
 
         if fetch:
             await interaction.guild.create_text_channel(ch_name, category=ch_cat)
-            await interaction.response.send_message(f"**[Text Channel]** \"{ch_name}\" has been created ✅")
+            embed = discord.Embed(
+                title=f"Text channel `{ch_name}` has been deleted in category `{ch_cat.name}`✅",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
         elif not fetch:
-            await interaction.response.send_message("**[ALERT]** You don't have permission to create text channels ❌")
+            embed = discord.Embed(
+                title="**[ALERT]** You don't have the permission to create text channels! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
+            return
 
 
     @admin.command(name="del_text_ch", description="Delete text channel")
@@ -216,9 +265,18 @@ class Admin(commands.Cog):
 
         if fetch:
             await channel.delete()
-            await interaction.response.send_message(f"**[Text Channel]** \"{channel.name}\" has been deleted ✅")
+            embed = discord.Embed(
+                title=f"Text channel `{channel.name}` has been deleted ✅",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
         elif not fetch:
-            await interaction.response.send_message("**[ALERT]** You don't have permission to delete text channels ❌")
+            embed = discord.Embed(
+                title="**[ALERT]** You don't have the permission to delete text channels! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
+            return
 
     @admin.command(name="new_voice_ch", description="Create new voice channel")
     async def new_voice_ch(self, interaction: discord.Interaction, ch_name: str, ch_cat: discord.CategoryChannel):
@@ -231,9 +289,18 @@ class Admin(commands.Cog):
 
         if fetch:
             await interaction.guild.create_voice_channel(ch_name, category=ch_cat)
-            await interaction.response.send_message(f"**[Voice Channel]** \"{ch_name}\" has been created ✅")
+            embed = discord.Embed(
+                title=f"Voice channel `{ch_name}` has been created ✅",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
         elif not fetch:
-            await interaction.response.send_message("**[ALERT]** You don't have permission to create voice channels ❌")
+            embed = discord.Embed(
+                title="**[ALERT]** You don't have the permission to create new voice channel! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
+            return
 
     @admin.command(name="del_voice_ch", description="Delete voice channel")
     async def del_voice_ch(self, interaction: discord.Interaction, ch_name: discord.VoiceChannel):
@@ -246,9 +313,18 @@ class Admin(commands.Cog):
 
         if fetch:
             await ch_name.delete()
-            await interaction.response.send_message(f"**[Voice Channel]** \"{ch_name}\" has been deleted ✅")
+            embed = discord.Embed(
+                title=f"Voice channel `{ch_name}` has been deleted ✅",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
         elif not fetch:
-            await interaction.response.send_message("**[ALERT]** You don't have permission to delete voice channels ❌")
+            embed = discord.Embed(
+                title="**[ALERT]** You don't have the permission to delete voice channel! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
+            return
 
     @admin.command(name="new_category", description="Create new category")
     async def new_category(self, interaction: discord.Interaction, name: str):
@@ -261,9 +337,18 @@ class Admin(commands.Cog):
 
         if fetch:
             await interaction.guild.create_category(name=name)
-            await interaction.response.send_message(f"**[Create Category]** \"{name}\" has been created ✅")
+            embed = discord.Embed(
+                title=f"Category `{name}` has been created ✅",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
         elif not fetch:
-            await interaction.response.send_message("**[ALERT]** You don't have permission to create categories! ❌")
+            embed = discord.Embed(
+                title="**[ALERT]** You don't have the permission to create new category! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
+            return
 
     @admin.command(name="del_category", description="Delete category")
     async def new_category(self, interaction: discord.Interaction, category: discord.CategoryChannel):
@@ -276,9 +361,17 @@ class Admin(commands.Cog):
 
         if fetch:
             await category.delete()
-            await interaction.response.send_message(f"**[Create Category]** \"{category.name}\" has been deleted ✅")
+            embed = discord.Embed(
+                title=f"Category `{category.name}` has been deleted ✅",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
         elif not fetch:
-            await interaction.response.send_message("**[ALERT]** You don't have permission to delete categories! ❌")
+            embed = discord.Embed(
+                title="**[ALERT]** You don't have the permission to delete category! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
 
     @admin.command(name="new_private_category")
     async def new_private_category(self, interaction: discord.Interaction, name: str):
@@ -299,10 +392,18 @@ class Admin(commands.Cog):
             }
 
             await guild.create_category(name, overwrites=overwrites)
-            await interaction.response.send_message(f"Private category `{name}` created ✅ (Admins only)")
+            embed = discord.Embed(
+                title=f"Private category `{name}` created ✅ (Admins only)",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
 
         elif not fetch:
-            await interaction.response.send_message(f"**[ALERT]** You don't have permission to create private category ❌")
+            embed = discord.Embed(
+                title="**[ALERT]** You don't have the permission to create new private category! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
 
     @admin.command(name="give_role", description="Give role to a user (or everyone)")
     async def add_role(self, interaction: discord.Interaction, role: discord.Role, user: discord.Member | None = None):
@@ -314,29 +415,50 @@ class Admin(commands.Cog):
         fetch = cursor.fetchone()
 
         if not fetch:
-            await interaction.response.send_message("**[ALERT]** You don't have permission to manage roles ❌")
+            embed = discord.Embed(
+                title="**[ALERT]** You don't have the permission to delete category! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
             return
 
         if fetch and interaction.user.id != interaction.guild.owner.id and (role.name == "Admin"):
-            await interaction.response.send_message("**[ALERT]** You don't have permission to give admin roles ❌")
+            embed = discord.Embed(
+                title="**[ALERT]** You don't have the permission to give Admin roles! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
             return
 
         if user:
             await user.add_roles(role)
-            await interaction.response.send_message(f"**[ADMIN]** Giving role `{role.name}` to @{user.name}...")
+            embed = discord.Embed(
+                title=f"Giving role `{role.name}` to {user.mention}...",
+                color=discord.Color.brand_green()
+            )
+            await interaction.response.send_message(embed=embed)
         else:
             await interaction.response.defer()
-            await interaction.followup.send(f"**[ADMIN]** Giving role `{role.name}` to everyone...")
+            embed = discord.Embed(
+                title=f"Giving role `{role.name}` to everyone...",
+                color=discord.Color.brand_green()
+            )
+            await interaction.followup.send(embed=embed)
 
             for member in interaction.guild.members:
                 try:
                     await member.add_roles(role)
-                    await interaction.followup.send(f"**[ADMIN]** `{member.name}` receieved `{role.name}` ✅")
+                    embed = discord.Embed(
+                        title=f"`{member.name}` receieved `{role.name}` ✅"
+                    )
+                    await interaction.followup.send(embed=embed)
                     await asyncio.sleep(0.5)
                 except discord.Forbidden:
                     continue
-
-            await interaction.followup.send(f"**[ADMIN]** Gave role `{role.name}` to everyone ✅")
+            embed = discord.Embed(
+                title=f"Gave role `{role.name}` to everyone ✅"
+            )
+            await interaction.followup.send(embed=embed)
 
 
 async def setup(bot: commands.Bot):
