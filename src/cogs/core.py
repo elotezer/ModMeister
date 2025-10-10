@@ -46,6 +46,7 @@ class Core(commands.Cog):
             `/admin new_category` Create new category
             `/admin new_private_category` Pivate category (Every new channel in this category will be private)
             `/del_category` Delete category
+            `/give_role` Add role to a user (leave user parameter empty to give everyone)
         """)
         await interaction.response.send_message(help_text)
 
