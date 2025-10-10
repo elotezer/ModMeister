@@ -1,4 +1,7 @@
+import asyncio
 from datetime import timedelta
+from types import NoneType
+
 from discord import app_commands
 from discord.ext import commands
 import discord
@@ -20,7 +23,7 @@ class Admin(commands.Cog):
         cursor.execute("""Select 1 From admins Where guild_id = ? And user_id = ?""", (interaction.guild_id, interaction.user.id))
         fetch = cursor.fetchone()
         if not fetch:
-            await interaction.response.send_message("You don't have the permission to kick members!")
+            await interaction.response.send_message("**[ALERT]** You don't have the permission to kick members!")
             return
 
         elif fetch:
@@ -41,7 +44,7 @@ class Admin(commands.Cog):
         fetch = cursor.fetchone()
 
         if not fetch:
-            await interaction.response.send_message("You don't have permission to ban members!")
+            await interaction.response.send_message("**[ALERT]** You don't have permission to ban members!")
             return
 
         elif fetch:
@@ -61,7 +64,7 @@ class Admin(commands.Cog):
                             And user_id = ?""", (interaction.guild_id, interaction.user.id))
         fetch = cursor.fetchone()
         if not fetch:
-            await interaction.response.send_message("You don't have permission to unban members!")
+            await interaction.response.send_message("**[ALERT]** You don't have permission to unban members!")
 
         elif fetch:
             await interaction.guild.unban(user)
@@ -81,7 +84,7 @@ class Admin(commands.Cog):
         fetch = cursor.fetchone()
 
         if not fetch:
-            interaction.response.send_message("You don't have permission to mute members!")
+            interaction.response.send_message("**[ALERT]** You don't have permission to mute members!")
             return
 
         elif fetch:
@@ -105,7 +108,7 @@ class Admin(commands.Cog):
         fetch = cursor.fetchone()
 
         if not fetch:
-            interaction.response.send_message("You don't have permission to unmute members!")
+            interaction.response.send_message("**[ALERT]** You don't have permission to unmute members!")
             return
 
         elif fetch:
@@ -124,7 +127,7 @@ class Admin(commands.Cog):
     @admin.command(name="add", description="Add an admin")
     async def add(self, interaction: discord.Interaction, user: discord.User):
         if interaction.user != interaction.guild.owner:
-            await interaction.response.send_message("Only the owner can add other admins!", ephemeral=True)
+            await interaction.response.send_message("**[ALERT]** Only the owner can add other admins!", ephemeral=True)
             return
 
         else:
@@ -140,7 +143,7 @@ class Admin(commands.Cog):
     @admin.command(name="remove", description="Remove an admin")
     async def add(self, interaction: discord.Interaction, user: discord.User):
         if interaction.user != interaction.guild.owner:
-            await interaction.response.send_message("Only the owner can remove admins!", ephemeral=True)
+            await interaction.response.send_message("**[ALERT]** Only the owner can remove admins!", ephemeral=True)
             return
 
         else:
@@ -162,7 +165,7 @@ class Admin(commands.Cog):
         fetch = cursor.fetchone()
 
         if not fetch:
-            await interaction.response.send_message("You don't have permission to list admins!", ephemeral=True)
+            await interaction.response.send_message("**[ALERT]** You don't have permission to list admins!", ephemeral=True)
             return
 
         elif fetch or interaction.user.id == interaction.guild.owner:
@@ -172,7 +175,7 @@ class Admin(commands.Cog):
             admin_ids = [row[0] for row in cursor.fetchall()]
 
             if len(admin_ids) == 0:
-                await interaction.response.send_message("No admins were added yet.", ephemeral=True)
+                await interaction.response.send_message("**[ALERT]** No admins were added yet.", ephemeral=True)
                 return
 
             mentions = []
@@ -200,7 +203,7 @@ class Admin(commands.Cog):
             await interaction.guild.create_text_channel(ch_name, category=ch_cat)
             await interaction.response.send_message(f"**[Text Channel]** \"{ch_name}\" has been created ✅")
         elif not fetch:
-            await interaction.response.send_message("You don't have permission to create text channels ❌")
+            await interaction.response.send_message("**[ALERT]** You don't have permission to create text channels ❌")
 
 
     @admin.command(name="del_text_ch", description="Delete text channel")
@@ -215,7 +218,7 @@ class Admin(commands.Cog):
             await channel.delete()
             await interaction.response.send_message(f"**[Text Channel]** \"{channel.name}\" has been deleted ✅")
         elif not fetch:
-            await interaction.response.send_message("You don't have permission to delete text channels ❌")
+            await interaction.response.send_message("**[ALERT]** You don't have permission to delete text channels ❌")
 
     @admin.command(name="new_voice_ch", description="Create new voice channel")
     async def new_voice_ch(self, interaction: discord.Interaction, ch_name: str, ch_cat: discord.CategoryChannel):
@@ -230,7 +233,7 @@ class Admin(commands.Cog):
             await interaction.guild.create_voice_channel(ch_name, category=ch_cat)
             await interaction.response.send_message(f"**[Voice Channel]** \"{ch_name}\" has been created ✅")
         elif not fetch:
-            await interaction.response.send_message("You don't have permission to create voice channels ❌")
+            await interaction.response.send_message("**[ALERT]** You don't have permission to create voice channels ❌")
 
     @admin.command(name="del_voice_ch", description="Delete voice channel")
     async def del_voice_ch(self, interaction: discord.Interaction, ch_name: discord.VoiceChannel):
@@ -245,7 +248,7 @@ class Admin(commands.Cog):
             await ch_name.delete()
             await interaction.response.send_message(f"**[Voice Channel]** \"{ch_name}\" has been deleted ✅")
         elif not fetch:
-            await interaction.response.send_message("You don't have permission to delete voice channels ❌")
+            await interaction.response.send_message("**[ALERT]** You don't have permission to delete voice channels ❌")
 
     @admin.command(name="new_category", description="Create new category")
     async def new_category(self, interaction: discord.Interaction, name: str):
@@ -260,7 +263,7 @@ class Admin(commands.Cog):
             await interaction.guild.create_category(name=name)
             await interaction.response.send_message(f"**[Create Category]** \"{name}\" has been created ✅")
         elif not fetch:
-            await interaction.response.send_message("You don't have permission to create categories! ❌")
+            await interaction.response.send_message("**[ALERT]** You don't have permission to create categories! ❌")
 
     @admin.command(name="del_category", description="Delete category")
     async def new_category(self, interaction: discord.Interaction, category: discord.CategoryChannel):
@@ -275,7 +278,7 @@ class Admin(commands.Cog):
             await category.delete()
             await interaction.response.send_message(f"**[Create Category]** \"{category.name}\" has been deleted ✅")
         elif not fetch:
-            await interaction.response.send_message("You don't have permission to delete categories! ❌")
+            await interaction.response.send_message("**[ALERT]** You don't have permission to delete categories! ❌")
 
     @admin.command(name="new_private_category")
     async def new_private_category(self, interaction: discord.Interaction, name: str):
@@ -299,7 +302,41 @@ class Admin(commands.Cog):
             await interaction.response.send_message(f"Private category `{name}` created ✅ (Admins only)")
 
         elif not fetch:
-            await interaction.response.send_message(f"You don't have permission to create private category ❌")
+            await interaction.response.send_message(f"**[ALERT]** You don't have permission to create private category ❌")
+
+    @admin.command(name="give_role", description="Give role to a user (or everyone)")
+    async def add_role(self, interaction: discord.Interaction, role: discord.Role, user: discord.Member | None = None):
+        cursor.execute("""SELECT 1
+                          FROM admins
+                          WHERE guild_id = ?
+                            AND user_id = ?""",
+                       (interaction.guild.id, interaction.user.id))
+        fetch = cursor.fetchone()
+
+        if not fetch:
+            await interaction.response.send_message("**[ALERT]** You don't have permission to manage roles ❌")
+            return
+
+        if fetch and interaction.user.id != interaction.guild.owner.id and (role.name == "Admin"):
+            await interaction.response.send_message("**[ALERT]** You don't have permission to give admin roles ❌")
+            return
+
+        if user:
+            await user.add_roles(role)
+            await interaction.response.send_message(f"**[ADMIN]** Giving role `{role.name}` to @{user.name}...")
+        else:
+            await interaction.response.defer()
+            await interaction.followup.send(f"**[ADMIN]** Giving role `{role.name}` to everyone...")
+
+            for member in interaction.guild.members:
+                try:
+                    await member.add_roles(role)
+                    await interaction.followup.send(f"**[ADMIN]** `{member.name}` receieved `{role.name}` ✅")
+                    await asyncio.sleep(0.5)
+                except discord.Forbidden:
+                    continue
+
+            await interaction.followup.send(f"**[ADMIN]** Gave role `{role.name}` to everyone ✅")
 
 
 async def setup(bot: commands.Bot):
