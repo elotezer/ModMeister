@@ -32,10 +32,15 @@ class User(commands.Cog):
     async def gpt(self, interaction: discord.Interaction, prompt: str):
         ai_client = OpenAI(api_key=GPT_KEY)
         await interaction.response.defer(thinking=True)
-        resp = ai_client.responses.create(model="gpt-4o-mini",
+        resp = ai_client.responses.create(model="gpt-4o-mini", # u can change this model to your preferred one
                                           input=prompt,
                                           store=True)
-        await interaction.followup.send(f"**[ChatGPT]** `{resp.output_text.strip()}`")
+        embed = discord.Embed(
+            title="**ChatGPT**",
+            description=f"`{resp.output_text.strip()}`",
+            color=discord.Color.blue()
+        )
+        await interaction.followup.send(embed=embed)
 
 
 
