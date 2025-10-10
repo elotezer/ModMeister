@@ -14,11 +14,21 @@ class Core(commands.Cog):
 
     @app_commands.command(name="ping", description="Is the bot alive?!")
     async def ping(self, interaction: discord.Interaction):
-        await interaction.response.send_message("Pong!")
+        embed = discord.Embed(
+            title="Ping-Pong command",
+            description="Pong!",
+            color=discord.Color.blurple()
+        )
+        await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="echo", description="Echoes back your message")
     async def echo(self, interaction: discord.Interaction, text: str):
-        await interaction.response.send_message(text)
+        embed = discord.Embed(
+            title="Echo command",
+            description=text,
+            color=discord.Color.blurple()
+        )
+        await interaction.response.send_message(embed=embed)
 
 
     @app_commands.command(name="help", description="Display all bot commands")
@@ -67,7 +77,12 @@ class EventsCog(commands.Cog):
     async def on_member_join(self, member: discord.Member):
         ch = member.guild.system_channel
         if ch:
-            await ch.send(f"Welcome to the server {member.mention}!")
+            embed = discord.Embed(
+                title="A New Member Joined Us! 🥳🙌",
+                description=f"Welcome to {member.guild.name}, {member.mention}!",
+                color=discord.Color.gold()
+            )
+            await ch.send(embed=embed)
 
         cursor.execute("""CREATE TABLE IF NOT EXISTS members (guild_id INT, user_id INT)""")
         connection.commit()
@@ -82,7 +97,12 @@ class EventsCog(commands.Cog):
     async def on_member_remove(self, member: discord.Member):
         ch = member.guild.system_channel
         if ch:
-            await ch.send(f"{member.mention} has left :(")
+            embed = discord.Embed(
+                title="A Member Left Us! 😖🌧️",
+                description=f"See you soon, {member.name}! 👋",
+                color=discord.Color.dark_blue()
+            )
+            await ch.send(embed=embed)
         cursor.execute("""DELETE FROM members where guild_id = ? and user_id = ?""", (member.guild.id, member.id))
         connection.commit()
 
