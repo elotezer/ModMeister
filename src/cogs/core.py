@@ -20,35 +20,44 @@ class Core(commands.Cog):
     async def echo(self, interaction: discord.Interaction, text: str):
         await interaction.response.send_message(text)
 
-    @app_commands.command(name="help", description="List of the bot's commands")
-    async def help(self, interaction: discord.Interaction):
+
+    @app_commands.command(name="help", description="Display all bot commands")
+    async def help_command(self, interaction: discord.Interaction):
         help_text = textwrap.dedent("""\
-        **Member commands**
-            `/ping` Checks if the bot is alive or not
-            `/echo` Sends you back the same text you provided as parameter
-            `/roll` Random number between a provided range
-            `/roll_f` Random number between 0 and 1
-            `/gpt` Prompt ChatGPT
-            
-        **Admin commands**
-            `/admin add` Add admin role to user
-            `/admin remove` Remove admin role from user
-            `/admin list` List of admins
-            `/admin ban` Ban a member
-            `/admin unban` Unban a member
-            `/admin mute` Mute a member for a specified minutes (Timeout)
-            `/admin unmute` Mute a member for a specified minutes (Timeout)
-            `/admin new_text_ch` Create new text channel
-            `/admin del_text_ch` Delete text channel
-            `/admin new_voice_ch` Create new voice channel
-            `/admin del_voice_ch` Delete voice channel
-            `/admin new_private_category` Create new private category
-            `/admin new_category` Create new category
-            `/admin new_private_category` Pivate category (Every new channel in this category will be private)
-            `/admin del_category` Delete category
-            `/admin give_role` Add role to a user (leave user parameter empty to give everyone)
-        """)
-        await interaction.response.send_message(help_text)
+                **Member commands**
+                    `/ping` Checks if the bot is alive or not
+                    `/echo` Sends you back the same text you provided as parameter
+                    `/roll` Random number between a provided range
+                    `/roll_f` Random number between 0 and 1
+                    `/gpt` Prompt ChatGPT
+
+                **Admin commands**
+                    `/admin add` Add admin role to user
+                    `/admin remove` Remove admin role from user
+                    `/admin list` List of admins
+                    `/admin ban` Ban a member
+                    `/admin unban` Unban a member
+                    `/admin mute` Mute a member for a specified minutes (Timeout)
+                    `/admin unmute` Mute a member for a specified minutes (Timeout)
+                    `/admin new_text_ch` Create new text channel
+                    `/admin del_text_ch` Delete text channel
+                    `/admin new_voice_ch` Create new voice channel
+                    `/admin del_voice_ch` Delete voice channel
+                    `/admin new_private_category` Create new private category
+                    `/admin new_category` Create new category
+                    `/admin new_private_category` Pivate category (Every new channel in this category will be private)
+                    `/admin del_category` Delete category
+                    `/admin give_role` Add role to a user (leave user parameter empty to give everyone)
+                """)
+        embed = discord.Embed(
+            title="ModMeister's commands",
+            description=help_text,
+            color=discord.Color.red()
+        )
+
+        embed.set_footer(text="ModMeister 2025")
+
+        await interaction.response.send_message(embed=embed)
 
 class EventsCog(commands.Cog):
     def __init__(self, bot):
