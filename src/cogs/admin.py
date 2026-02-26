@@ -200,24 +200,28 @@ class Admin(commands.Cog):
             connection.commit()
             role = discord.utils.get(interaction.guild.roles, name="Admin")
             member = interaction.guild.get_member(user.id)
-            while True:
-                try:
-                    await member.add_roles(role)
-                    embed = discord.Embed(
-                        title=f"{user.name} is now an Admin! 🥳",
-                        color=discord.Color.green()
-                    )
-                    await interaction.response.send_message(embed=embed)
-                    break
-                except AttributeError:
-                    perms = discord.Permissions(administrator=True)
-                    admin_role = await interaction.guild.create_role(
-                        name="Admin",
-                        color=discord.Color.red(),
-                        permissions=perms,         
-                        hoist=True,                
-                        mentionable=True           
-                    )
+            try:
+                await member.add_roles(role)
+                embed = discord.Embed(
+                    title=f"{user.name} is now an Admin! 🥳",
+                    color=discord.Color.green()
+                )
+                await interaction.response.send_message(embed=embed)
+            except AttributeError:
+                perms = discord.Permissions(administrator=True)
+                admin_role = await interaction.guild.create_role(
+                    name="Admin",
+                    color=discord.Color.red(),
+                    permissions=perms,         
+                    hoist=True,                
+                    mentionable=True           
+                )
+                await member.add_roles(admin_role)
+                embed = discord.Embed(
+                    title=f"{user.name} is now an Admin! 🥳",
+                    color=discord.Color.green()
+                )
+                await interaction.response.send_message(embed=embed)
 
     @admin.command(name="remove", description="Remove an admin")
     async def add(self, interaction: discord.Interaction, user: discord.User):
@@ -599,6 +603,42 @@ class Admin(commands.Cog):
                     await category.delete()
                 except Exception as e:
                     print(f"couldnt delete category: {category.name} -", e)
+
+    @admin.command(name="clear_roles", description="Deletes all roles")
+    async def clear_roles(self, interaction: discord.Interaction):
+        cursor.execute("""select 1 from admins where guild_id = ? and user_id = ?""",
+                    (interaction.guild_id, interaction.user.id))
+        if not cursor.fetchone():
+            await interaction.response.send_message("**[ALERT]** You don't have permission to wipe roles ❌", ephemeral=True)
+            return
+
+        await interaction.response.defer()
+
+        deleted_count = 0
+        bot_member = interaction.guild.me
+
+        roles_to_delete = [
+            role for role in interaction.guild.roles 
+            if not role.is_default() 
+            and not role.managed 
+            and role < bot_member.top_role
+        ]
+
+        for role in reversed(roles_to_delete):
+            try:
+                await role.delete()
+                deleted_count += 1
+                await asyncio.sleep(0.2)
+            except Exception:
+                continue
+
+        embed = discord.Embed(
+            title="Roles wiped ✅",
+            description=f"Successfully deleted: **{deleted_count}**",
+            color=discord.Color.green()
+        )
+        
+        await interaction.followup.send(embed=embed)
 
 
 async def setup(bot: commands.Bot):
