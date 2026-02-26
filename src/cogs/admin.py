@@ -199,13 +199,24 @@ class Admin(commands.Cog):
             connection.commit()
             role = discord.utils.get(interaction.guild.roles, name="Admin")
             member = interaction.guild.get_member(user.id)
-
-            await member.add_roles(role)
-            embed = discord.Embed(
-                title=f"{user.name} is now an Admin! 🥳",
-                color=discord.Color.green()
-            )
-            await interaction.response.send_message(embed=embed)
+            while True:
+                try:
+                    await member.add_roles(role)
+                    embed = discord.Embed(
+                        title=f"{user.name} is now an Admin! 🥳",
+                        color=discord.Color.green()
+                    )
+                    await interaction.response.send_message(embed=embed)
+                    break
+                except AttributeError:
+                    perms = discord.Permissions(administrator=True)
+                    admin_role = await interaction.guild.create_role(
+                        name="Admin",
+                        color=discord.Color.red(),
+                        permissions=perms,         
+                        hoist=True,                
+                        mentionable=True           
+                    )
 
     @admin.command(name="remove", description="Remove an admin")
     async def add(self, interaction: discord.Interaction, user: discord.User):
@@ -242,7 +253,7 @@ class Admin(commands.Cog):
         if fetch:
             await interaction.guild.create_text_channel(ch_name, category=ch_cat)
             embed = discord.Embed(
-                title=f"Text channel `{ch_name}` has been deleted in category `{ch_cat.name}`✅",
+                title=f"Text channel `{ch_name}` has been created in category `{ch_cat.name}`✅",
                 color=discord.Color.green()
             )
             await interaction.response.send_message(embed=embed)
@@ -459,6 +470,134 @@ class Admin(commands.Cog):
                 title=f"Gave role `{role.name}` to everyone ✅"
             )
             await interaction.followup.send(embed=embed)
+    @admin.command(name="setup_server", description="Sets up a basic server model with categories and channels")
+    async def setup_server(self, interaction: discord.Interaction):
+        cursor.execute("""select 1 
+                          from admins 
+                          where guild_id = ? and user_id = ?""",
+                       (interaction.guild_id, interaction.user.id))
+        fetch = cursor.fetchone()
+
+        if fetch:
+            await interaction.response.defer(ephemeral=False)
+
+            for channel in interaction.guild.channels:
+                try:
+                    if not channel.id == interaction.channel.id:
+                        await channel.delete()
+                except Exception as e:
+                    print(f"couldnt delete channel: {channel.name} -", e)
+
+            for category in interaction.guild.categories:
+                try:
+                    await category.delete()
+                except Exception as e:
+                    print(f"couldnt delete category: {category.name} -", e)
+
+
+            # all channels in 'about' will be read only
+            about = await interaction.guild.create_category(name="About")
+            embed = discord.Embed(
+                title=f"Category `About` has been created ✅",
+                color=discord.Color.green()
+            )
+            await interaction.followup.send(embed=embed)
+            # all channels in 'text' will be accessable by @everyone
+            text = await interaction.guild.create_category(name="Text")
+            embed = discord.Embed(
+                title=f"Category `Text` has been created ✅",
+                color=discord.Color.green()
+            )
+            await interaction.followup.send(embed=embed)
+            # all channels in 'voice' will be accessable by @everyone (except private admin vc)
+            voice = await interaction.guild.create_category(name="Voice")
+            embed = discord.Embed(
+                title=f"Category `Voice` has been created ✅",
+                color=discord.Color.green()
+            )
+            await interaction.followup.send(embed=embed)
+
+            # @everyone read only
+            overwrites = {
+            interaction.guild.default_role: discord.PermissionOverwrite(
+                send_messages=False, 
+                view_channel=True
+            ),
+            interaction.guild.me: discord.PermissionOverwrite(
+                send_messages=True, 
+                view_channel=True
+            )
+        }
+
+            about_ch_names = ["welcome", "rules", "roles", "server", "channels", "leavers"]
+            text_ch_names = ["chat", "images", "videos", "music", "links", "games"]
+            voice_ch_names = ["Voice Public", "Voice Trio", "Voice Duo", "Voice AFK"]
+
+            for name in about_ch_names:
+                await interaction.guild.create_text_channel(name=name, category=about, overwrites=overwrites)
+                embed = discord.Embed(
+                    title=f"Text channel `{name}` has been created in category `About`✅",
+                    color=discord.Color.green()
+                )
+                await interaction.followup.send(embed=embed)
+            for name in text_ch_names:
+                await interaction.guild.create_text_channel(name=name, category=text)
+                embed = discord.Embed(
+                    title=f"Text channel `{name}` has been created in category `Text`✅",
+                    color=discord.Color.green()
+                )
+                await interaction.followup.send(embed=embed)
+            for name in voice_ch_names:
+                if name == "Voice Trio":
+                    await interaction.guild.create_voice_channel(name=name, category=voice, user_limit=3)
+                elif name == "Voice Duo":
+                    await interaction.guild.create_voice_channel(name=name, category=voice, user_limit=2)
+                else:
+                    await interaction.guild.create_voice_channel(name=name, category=voice)
+                embed = discord.Embed(
+                    title=f"Text channel `{name}` has been created in category `Text`✅",
+                    color=discord.Color.green()
+                )
+                await interaction.followup.send(embed=embed)
+
+            for channel in interaction.guild.channels:
+                    try:
+                        if channel.id == interaction.channel.id:
+                            await channel.delete()
+                    except Exception as e:
+                        print(f"couldnt delete channel: {channel.name} -", e)
+            
+        elif not fetch:
+            embed = discord.Embed(
+                title="**[ALERT]** You don't have the permission to run a server setup! ❌",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+    
+    @admin.command(name="wipe", description="Delete every category and every channel in the server. A fresh start.")
+    async def wipe(self, interaction: discord.Interaction):
+        cursor.execute("""select 1 
+                          from admins 
+                          where guild_id = ? and user_id = ?""",
+                       (interaction.guild_id, interaction.user.id))
+        fetch = cursor.fetchone()
+
+        if fetch:
+            await interaction.response.defer(ephemeral=False)
+
+            for channel in interaction.guild.channels:
+                try:
+                    if not channel.id == interaction.channel.id:
+                        await channel.delete()
+                except Exception as e:
+                    print(f"couldnt delete channel: {channel.name} -", e)
+
+            for category in interaction.guild.categories:
+                try:
+                    await category.delete()
+                except Exception as e:
+                    print(f"couldnt delete category: {category.name} -", e)
 
 
 async def setup(bot: commands.Bot):
