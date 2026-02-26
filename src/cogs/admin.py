@@ -11,6 +11,7 @@ connection = sqlite3.connect("botdatabase.db")
 cursor = connection.cursor()
 
 cursor.execute("CREATE TABLE IF NOT EXISTS admins (guild_id INTEGER, user_id INTEGER)")
+cursor.execute("CREATE TABLE IF NOT EXISTS members (guild_id INTEGER, user_id INTEGER)")
 
 class Admin(commands.Cog):
     def __init__(self, bot):
