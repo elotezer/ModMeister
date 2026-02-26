@@ -8,6 +8,7 @@ sudo npm install pm2 -g
 if [ ! -d "ModMeister" ]; then
     git clone https://github.com/elotezer/ModMeister
 fi
+
 cd ModMeister
 
 python3 -m venv venv
@@ -19,7 +20,10 @@ if [ ! -f ".env" ]; then
     touch .env
 fi
 
+sudo chown -R $USER:$USER $(pwd)
+chmod 775 $(pwd)
+
 pm2 start src/main.py --interpreter ./venv/bin/python3 --name "modmeister-bot"
 
-pm2 startup | grep "sudo" | bash
+sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u $USER --hp /home/$USER
 pm2 save
