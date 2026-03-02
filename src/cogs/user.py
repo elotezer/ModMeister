@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import dotenv
 
+from google import genai
+
 dotenv.load_dotenv()
 
 GPT_KEY = os.getenv("GPT_KEY")
@@ -32,7 +34,7 @@ class User(commands.Cog):
     async def gpt(self, interaction: discord.Interaction, prompt: str):
         ai_client = OpenAI(api_key=GPT_KEY)
         await interaction.response.defer(thinking=True)
-        resp = ai_client.responses.create(model="gpt-4o-mini", # u can change this model to your preferred one
+        resp = ai_client.responses.create(model="gpt-5-mini", # u can change this model to your preferred one
                                           input=prompt,
                                           store=True)
         embed = discord.Embed(
@@ -42,6 +44,21 @@ class User(commands.Cog):
         )
         await interaction.followup.send(embed=embed)
 
+    @app_commands.command(name="gemini", description="Ask Gemini")
+    async def gemini(self, interaction: discord.Interaction, prompt: str):
+        client = genai.Client()
+        await interaction.response.defer(thinking=True)
+
+        response = client.models.generate_content(model="gemini-3-flash-preview", contents=prompt)
+
+        embed = discord.Embed(
+            title="**Gemini**",
+            description=f"`{response.text.strip()}`",
+            color=discord.Color.blue()
+        )
+        await interaction.followup.send(embed=embed)
+        # print(response.text)
+ 
 
 
 async def setup(bot: commands.Bot):
