@@ -46,8 +46,12 @@ class User(commands.Cog):
 
     @app_commands.command(name="gemini", description="Ask Gemini")
     async def gemini(self, interaction: discord.Interaction, prompt: str):
-        client = genai.Client()
+
         await interaction.response.defer(thinking=True)
+
+        
+        client = genai.Client()
+        
 
         response = client.models.generate_content(model="gemini-3-flash-preview", contents=prompt)
 
@@ -56,6 +60,7 @@ class User(commands.Cog):
             description=f"`{response.text.strip()}`",
             color=discord.Color.blue()
         )
+        embed.set_footer(text=f"Q: {prompt[:100]}...")
         await interaction.followup.send(embed=embed)
         # print(response.text)
  
