@@ -41,6 +41,7 @@ class Core(commands.Cog):
                     `/roll` Random number between a provided range
                     `/roll_f` Random number between 0 and 1
                     `/gpt` Prompt ChatGPT
+                    `/gemini` Prompt Gemini
 
                 **Admin commands**
                     `/admin add` Add admin role to user
@@ -59,6 +60,12 @@ class Core(commands.Cog):
                     `/admin new_private_category` Pivate category (Every new channel in this category will be private)
                     `/admin del_category` Delete category
                     `/admin give_role` Add role to a user (leave user parameter empty to give everyone)
+                    `/admin setup_server` Wipes the server then creates a basic layout of channels
+                    `/admin wipe` Delete every category and every channel in the server
+                    `/admin clear_roles` Delete every role in the server that can be deleted
+                    
+                    
+                    
                 """)
         embed = discord.Embed(
             title="ModMeister's commands",
@@ -66,7 +73,7 @@ class Core(commands.Cog):
             color=discord.Color.red()
         )
 
-        embed.set_footer(text="ModMeister 2025")
+        embed.set_footer(text="ModMeister 2026")
 
         await interaction.response.send_message(embed=embed)
 
