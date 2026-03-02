@@ -2,6 +2,7 @@ from __future__ import annotations
 import discord
 from discord import app_commands
 from discord.ext import commands
+from discord.utils import get
 import sqlite3
 import textwrap
 
@@ -75,8 +76,15 @@ class EventsCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        ch = member.guild.system_channel
+        ch = get(member.guild.text_channels, name="welcome")
         if ch:
+            embed = discord.Embed(
+                title="A New Member Joined Us! 🥳🙌",
+                description=f"Welcome to {member.guild.name}, {member.mention}!",
+                color=discord.Color.gold()
+            )
+            await ch.send(embed=embed)
+        elif ch:
             embed = discord.Embed(
                 title="A New Member Joined Us! 🥳🙌",
                 description=f"Welcome to {member.guild.name}, {member.mention}!",
@@ -95,8 +103,16 @@ class EventsCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        ch = member.guild.system_channel
-        if ch:
+        ch = get(member.guild.text_channels, name="leavers")
+        if not ch:
+            ch = member.guild.system_channel
+            embed = discord.Embed(
+                title="A Member Left Us! 😖🌧️",
+                description=f"See you soon, {member.name}! 👋",
+                color=discord.Color.dark_blue()
+            )
+            await ch.send(embed=embed)
+        elif ch:
             embed = discord.Embed(
                 title="A Member Left Us! 😖🌧️",
                 description=f"See you soon, {member.name}! 👋",
