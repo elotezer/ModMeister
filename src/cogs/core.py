@@ -122,8 +122,6 @@ class EventsCog(commands.Cog):
         cursor.execute("""DELETE FROM members where guild_id = ? and user_id = ?""", (member.guild.id, member.id))
         connection.commit()
 
-        admin_role = discord.utils.get(member.guild.roles, name="Admin")
-
         cursor.execute("SELECT 1 FROM admins WHERE guild_id = ? AND user_id = ?", (member.guild.id, member.id))
         if cursor.fetchone() is not None:
             cursor.execute("""DELETE
