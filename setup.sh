@@ -14,7 +14,7 @@ cd ModMeister
 python3 -m venv venv
 
 ./venv/bin/pip install --upgrade pip
-./venv/bin/pip install dotenv~=0.9.9 python-dotenv~=1.1.1 discord.py openai
+./venv/bin/pip install dotenv~=0.9.9 python-dotenv~=1.1.1 discord.py openai google google.genai
 
 if [ ! -f ".env" ]; then
     touch .env
