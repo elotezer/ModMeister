@@ -1,7 +1,5 @@
 #!/bin/bash
 
-cd ~/ModMeister
-
 echo "--- Frissítés indítása: $(date) ---"
 
 git pull origin master
