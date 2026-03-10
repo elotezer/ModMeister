@@ -105,6 +105,22 @@ class Core(commands.Cog):
         )
 
         embed.add_field(
+            name="🎵  Music",
+            value=(
+                "`/play` — Play a SoundCloud or Spotify track/playlist\n"
+                "`/pause` — Pause the current track\n"
+                "`/resume` — Resume the paused track\n"
+                "`/skip` — Skip the current track\n"
+                "`/stop` — Stop playback and disconnect\n"
+                "`/queue` — Show the current queue\n"
+                "`/nowplaying` — Show what's currently playing\n"
+                "`/loop` — Toggle looping the current track\n"
+                "`/volume` — Set playback volume (0–100)"
+            ),
+            inline=False
+        )
+
+        embed.add_field(
             name="🛠️  Server",
             value=(
                 "`/admin setup_server` — Wipe and rebuild a basic server layout\n"
