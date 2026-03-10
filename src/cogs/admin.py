@@ -387,6 +387,96 @@ class Admin(commands.Cog):
         except discord.Forbidden:
             pass
 
+    @admin.command(name="warnings", description="View all warnings for a member")
+    async def warnings(self, interaction: discord.Interaction, user: discord.Member):
+        if not self.is_admin(interaction):
+            await self.send_no_permission(interaction, "view warnings")
+            return
+
+        cursor.execute(
+            "SELECT id, reason, warned_by, timestamp FROM warnings WHERE guild_id = ? AND user_id = ? ORDER BY timestamp DESC",
+            (interaction.guild_id, user.id)
+        )
+        rows = cursor.fetchall()
+
+        if not rows:
+            embed = info_embed(f"No warnings for {user}", f"{user.mention} has a clean record.")
+            embed.set_thumbnail(url=user.display_avatar.url)
+            embed.set_footer(text=f"Requested by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+            await interaction.response.send_message(embed=embed)
+            return
+
+        embed = discord.Embed(title=f"Warnings — {user}", color=0xf39c12)
+        embed.set_thumbnail(url=user.display_avatar.url)
+
+        for warning_id, reason, warned_by, timestamp in rows:
+            embed.add_field(
+                name=f"#{warning_id} • {timestamp}",
+                value=f"**Reason:** {reason}\n**By:** <@{warned_by}>",
+                inline=False
+            )
+
+        embed.set_footer(
+            text=f"Total: {len(rows)} warning(s) • Requested by {interaction.user}",
+            icon_url=interaction.user.display_avatar.url
+        )
+        await interaction.response.send_message(embed=embed)
+
+    @admin.command(name="clear_warnings", description="Clear warnings for a member — all or a specific one by ID")
+    async def clear_warnings(self, interaction: discord.Interaction, user: discord.Member, warning_id: int | None = None):
+        if not self.is_admin(interaction):
+            await self.send_no_permission(interaction, "clear warnings")
+            return
+
+        if warning_id is not None:
+            cursor.execute(
+                "SELECT id FROM warnings WHERE id = ? AND guild_id = ? AND user_id = ?",
+                (warning_id, interaction.guild_id, user.id)
+            )
+            if not cursor.fetchone():
+                await interaction.response.send_message(
+                    embed=error_embed(f"Warning `#{warning_id}` not found for {user.mention}."),
+                    ephemeral=True
+                )
+                return
+
+            cursor.execute("DELETE FROM warnings WHERE id = ?", (warning_id,))
+            connection.commit()
+
+            cursor.execute(
+                "SELECT COUNT(*) FROM warnings WHERE guild_id = ? AND user_id = ?",
+                (interaction.guild_id, user.id)
+            )
+            remaining = cursor.fetchone()[0]
+
+            embed = success_embed(f"Warning `#{warning_id}` removed from {user.mention}.")
+            embed.add_field(name="Remaining Warnings", value=str(remaining), inline=True)
+        else:
+            cursor.execute(
+                "SELECT COUNT(*) FROM warnings WHERE guild_id = ? AND user_id = ?",
+                (interaction.guild_id, user.id)
+            )
+            count = cursor.fetchone()[0]
+
+            if count == 0:
+                await interaction.response.send_message(
+                    embed=error_embed(f"{user.mention} has no warnings to clear."),
+                    ephemeral=True
+                )
+                return
+
+            cursor.execute(
+                "DELETE FROM warnings WHERE guild_id = ? AND user_id = ?",
+                (interaction.guild_id, user.id)
+            )
+            connection.commit()
+
+            embed = success_embed(f"All **{count}** warning(s) cleared for {user.mention}.")
+
+        embed.set_thumbnail(url=user.display_avatar.url)
+        embed.set_footer(text=f"Actioned by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+        await interaction.response.send_message(embed=embed)
+
     @admin.command(name="userinfo", description="Display full information about a user")
     async def userinfo(self, interaction: discord.Interaction, user: discord.Member):
         if not self.is_admin(interaction):

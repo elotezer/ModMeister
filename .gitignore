@@ -2,5 +2,6 @@
 venv
 .idea
 botdatabase.db
-src/cogs/__pycache__
-src/cogs/__pycache__/*
+__pycache__
+**/__pycache__
+**/__pycache__/*
