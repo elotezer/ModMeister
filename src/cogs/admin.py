@@ -12,6 +12,16 @@ cursor = connection.cursor()
 
 cursor.execute("CREATE TABLE IF NOT EXISTS admins (guild_id INTEGER, user_id INTEGER)")
 cursor.execute("CREATE TABLE IF NOT EXISTS members (guild_id INTEGER, user_id INTEGER)")
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS warnings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        guild_id INTEGER,
+        user_id INTEGER,
+        reason VARCHAR(50),
+        warned_by INTEGER,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+""")
 
 class Admin(commands.Cog):
     def __init__(self, bot):
@@ -456,6 +466,45 @@ class Admin(commands.Cog):
         )
 
         await interaction.followup.send(embed=embed)
+    
+    @admin.command(name="warn", description="Issue a warning to a member")
+    async def warn(self, interaction: discord.Interaction, user: discord.Member, reason: str):
+        if not self.is_admin(interaction):
+            await self.send_no_permission(interaction, "warn members")
+            return
+
+        cursor.execute(
+            "INSERT INTO warnings (guild_id, user_id, reason, warned_by) VALUES (?, ?, ?, ?)",
+            (interaction.guild_id, user.id, reason, interaction.user.id)
+        )
+        connection.commit()
+
+        cursor.execute(
+            "SELECT COUNT(*) FROM warnings WHERE guild_id = ? AND user_id = ?",
+            (interaction.guild_id, user.id)
+        )
+        total_warnings = cursor.fetchone()[0]
+
+        embed = discord.Embed(
+            title=f"⚠️ {user.display_name} has been warned",
+            color=discord.Color.yellow()
+        )
+        embed.add_field(name="Reason", value=reason, inline=False)
+        embed.add_field(name="Warned by", value=interaction.user.mention, inline=True)
+        embed.add_field(name="Total warnings", value=str(total_warnings), inline=True)
+        embed.set_footer(text=f"User ID: {user.id}")
+        await interaction.response.send_message(embed=embed)
+
+        try:
+            dm_embed = discord.Embed(
+                title=f"⚠️ You have been warned in {interaction.guild.name}",
+                color=discord.Color.yellow()
+            )
+            dm_embed.add_field(name="Reason", value=reason, inline=False)
+            dm_embed.add_field(name="Total warnings", value=str(total_warnings), inline=True)
+            await user.send(embed=dm_embed)
+        except discord.Forbidden:
+            pass
 
 
 async def setup(bot: commands.Bot):
