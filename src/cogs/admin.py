@@ -505,6 +505,107 @@ class Admin(commands.Cog):
             await user.send(embed=dm_embed)
         except discord.Forbidden:
             pass
+    
+    @admin.command(name="userinfo", description="Display full information about a user")
+    async def userinfo(self, interaction: discord.Interaction, user: discord.Member):
+        if not self.is_admin(interaction):
+            await self.send_no_permission(interaction, "look up user info")
+            return
+
+        await interaction.response.defer()
+
+        # warnings from DB
+        cursor.execute(
+            "SELECT reason, warned_by, timestamp FROM warnings WHERE guild_id = ? AND user_id = ? ORDER BY timestamp DESC",
+            (interaction.guild_id, user.id)
+        )
+        warning_rows = cursor.fetchall()
+        total_warnings = len(warning_rows)
+        created_at = discord.utils.format_dt(user.created_at, style="F")
+        created_ago = discord.utils.format_dt(user.created_at, style="R")
+        account_age_days = (discord.utils.utcnow() - user.created_at).days
+
+        joined_at = discord.utils.format_dt(user.joined_at, style="F") if user.joined_at else "Unknown"
+        joined_ago = discord.utils.format_dt(user.joined_at, style="R") if user.joined_at else ""
+
+        rejoined_note = ""
+        if user.joined_at:
+            days_after_creation = (user.joined_at - user.created_at).days
+            if days_after_creation > 30:
+                rejoined_note = f" (joined {days_after_creation} days after account creation — may have left & rejoined)"
+
+        roles = [r.mention for r in reversed(user.roles) if r.name != "@everyone"]
+        roles_display = ", ".join(roles) if roles else "None"
+
+        key_perms = []
+        if user.guild_permissions.administrator:
+            key_perms.append("Administrator")
+        if user.guild_permissions.manage_guild:
+            key_perms.append("Manage Server")
+        if user.guild_permissions.manage_roles:
+            key_perms.append("Manage Roles")
+        if user.guild_permissions.manage_channels:
+            key_perms.append("Manage Channels")
+        if user.guild_permissions.ban_members:
+            key_perms.append("Ban Members")
+        if user.guild_permissions.kick_members:
+            key_perms.append("Kick Members")
+        if user.guild_permissions.moderate_members:
+            key_perms.append("Timeout Members")
+        perms_display = ", ".join(key_perms) if key_perms else "None"
+
+        status_map = {
+            discord.Status.online: "🟢 Online",
+            discord.Status.idle: "🌙 Idle",
+            discord.Status.dnd: "🔴 Do Not Disturb",
+            discord.Status.offline: "⚫ Offline"
+        }
+        status = status_map.get(user.status, "Unknown")
+        activity = str(user.activity) if user.activity else "None"
+
+        timed_out = ""
+        if user.timed_out_until and user.timed_out_until > discord.utils.utcnow():
+            timed_out = discord.utils.format_dt(user.timed_out_until, style="R")
+
+        embed = discord.Embed(
+            title=f"User Info — {user}",
+            color=user.color if user.color != discord.Color.default() else discord.Color.blurple()
+        )
+
+        if user.avatar:
+            embed.set_thumbnail(url=user.avatar.url)
+
+        embed.add_field(name="Display Name", value=user.display_name, inline=True)
+        embed.add_field(name="Username", value=str(user), inline=True)
+        embed.add_field(name="User ID", value=str(user.id), inline=True)
+        embed.add_field(name="Account Created", value=f"{created_at} ({created_ago})\n{account_age_days} days old", inline=False)
+
+        embed.add_field(name="Joined Server", value=f"{joined_at} ({joined_ago}){rejoined_note}", inline=False)
+
+        embed.add_field(name="Bot", value="Yes" if user.bot else "No", inline=True)
+
+        embed.add_field(name="Status", value=status, inline=True)
+        embed.add_field(name="Activity", value=activity, inline=True)
+
+        if timed_out:
+            embed.add_field(name="⏱️ Timed Out Until", value=timed_out, inline=False)
+
+        embed.add_field(name="Key Permissions", value=perms_display, inline=False)
+
+
+        embed.add_field(name=f"Roles ({len(roles)})", value=roles_display[:1024], inline=False)
+
+
+        embed.add_field(name=f"⚠️ Warnings ({total_warnings})", value=(
+            "\n".join(
+                f"`{row[2]}` — {row[0]} (by <@{row[1]}>)"
+                for row in warning_rows[:5]
+            ) + ("\n...and more" if total_warnings > 5 else "")
+        ) if total_warnings > 0 else "None", inline=False)
+
+        embed.set_footer(text=f"Requested by {interaction.user} • {interaction.guild.name}")
+
+        await interaction.followup.send(embed=embed)
 
 
 async def setup(bot: commands.Bot):
