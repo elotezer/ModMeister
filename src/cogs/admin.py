@@ -23,6 +23,19 @@ cursor.execute("""
     )
 """)
 
+
+def success_embed(description: str) -> discord.Embed:
+    return discord.Embed(description=f"✅  {description}", color=0x2ecc71)
+
+
+def error_embed(description: str) -> discord.Embed:
+    return discord.Embed(description=f"🚫  {description}", color=0xe74c3c)
+
+
+def info_embed(title: str, description: str = "") -> discord.Embed:
+    return discord.Embed(title=title, description=description, color=0x3498db)
+
+
 class Admin(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -41,23 +54,22 @@ class Admin(commands.Cog):
 
     async def send_no_permission(self, interaction: discord.Interaction, action: str):
         """Sends a standard 'no permission' embed response."""
-        embed = discord.Embed(
-            title=f"**[ALERT]** You don't have the permission to {action}! ❌",
-            color=discord.Color.red()
+        await interaction.response.send_message(
+            embed=error_embed(f"You don't have permission to {action}."),
+            ephemeral=True
         )
-        await interaction.response.send_message(embed=embed)
 
     @admin.command(name="kick", description="Kick a member")
-    async def kick(self, interaction: discord.Interaction, user: discord.User, reason: str):
+    async def kick(self, interaction: discord.Interaction, user: discord.Member, reason: str):
         if not self.is_admin(interaction):
             await self.send_no_permission(interaction, "kick members")
             return
 
         await user.kick(reason=reason)
-        embed = discord.Embed(
-            title=f"{user.display_name} has been kicked 🪽\nReason: {reason}",
-            color=discord.Color.green()
-        )
+        embed = success_embed(f"{user.mention} has been kicked.")
+        embed.add_field(name="Reason", value=reason, inline=False)
+        embed.set_thumbnail(url=user.display_avatar.url)
+        embed.set_footer(text=f"Actioned by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
 
     @admin.command(name="ban", description="Ban a member")
@@ -67,10 +79,10 @@ class Admin(commands.Cog):
             return
 
         await user.ban(reason=reason)
-        embed = discord.Embed(
-            title=f"{user.mention} has been banned 💥\nReason: {reason}",
-            color=discord.Color.green()
-        )
+        embed = success_embed(f"{user.mention} has been banned.")
+        embed.add_field(name="Reason", value=reason, inline=False)
+        embed.set_thumbnail(url=user.display_avatar.url)
+        embed.set_footer(text=f"Actioned by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
 
     @admin.command(name="unban", description="Unban a member")
@@ -80,179 +92,161 @@ class Admin(commands.Cog):
             return
 
         await interaction.guild.unban(user)
-        embed = discord.Embed(
-            title=f"{user.mention} has been unbanned! 🙌",
-            color=discord.Color.green()
-        )
+        embed = success_embed(f"{user.mention} has been unbanned.")
+        embed.set_thumbnail(url=user.display_avatar.url)
+        embed.set_footer(text=f"Actioned by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
 
-    @admin.command(name="mute", description="Mute a member for a specific minutes (Timeout)")
-    async def mute(self, interaction: discord.Interaction, user: discord.User, minutes: int, reason: str):
+    @admin.command(name="mute", description="Mute a member for a specific number of minutes (Timeout)")
+    async def mute(self, interaction: discord.Interaction, user: discord.Member, minutes: int, reason: str):
         if not self.is_admin(interaction):
             await self.send_no_permission(interaction, "mute members")
             return
 
         muted_until = discord.utils.utcnow() + timedelta(minutes=minutes)
         await user.timeout(muted_until, reason=reason)
-        embed = discord.Embed(
-            title=f"{user.mention} has been muted for {minutes} minutes 🔇\nReason: {reason}",
-            color=discord.Color.green()
-        )
+        embed = success_embed(f"{user.mention} has been muted for **{minutes} minute(s)**.")
+        embed.add_field(name="Reason", value=reason, inline=False)
+        embed.add_field(name="Expires", value=discord.utils.format_dt(muted_until, style="R"), inline=True)
+        embed.set_thumbnail(url=user.display_avatar.url)
+        embed.set_footer(text=f"Actioned by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
 
     @admin.command(name="unmute", description="Unmute a member")
-    async def unmute(self, interaction: discord.Interaction, user: discord.User):
+    async def unmute(self, interaction: discord.Interaction, user: discord.Member):
         if not self.is_admin(interaction):
             await self.send_no_permission(interaction, "unmute members")
             return
 
         await user.timeout(None)
-        embed = discord.Embed(
-            title=f"{user.name} has been unmuted ✅",
-            color=discord.Color.green()
-        )
+        embed = success_embed(f"{user.mention} has been unmuted.")
+        embed.set_thumbnail(url=user.display_avatar.url)
+        embed.set_footer(text=f"Actioned by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
 
     @admin.command(name="add", description="Add an admin")
     async def add(self, interaction: discord.Interaction, user: discord.User):
         if interaction.user != interaction.guild.owner:
-            embed = discord.Embed(
-                title="**[ALERT]** Only the owner can add admins! ❌",
-                color=discord.Color.red()
+            await interaction.response.send_message(
+                embed=error_embed("Only the server owner can add admins."),
+                ephemeral=True
             )
-            await interaction.response.send_message(embed=embed)
             return
 
         guild_id = interaction.guild.id
-        cursor.execute("""INSERT INTO admins (guild_id, user_id) VALUES (?, ?) """, (guild_id, user.id))
+        cursor.execute("INSERT INTO admins (guild_id, user_id) VALUES (?, ?)", (guild_id, user.id))
         connection.commit()
         role = discord.utils.get(interaction.guild.roles, name="Admin")
         member = interaction.guild.get_member(user.id)
         try:
             await member.add_roles(role)
-            embed = discord.Embed(
-                title=f"{user.name} is now an Admin! 🥳",
-                color=discord.Color.green()
-            )
-            await interaction.response.send_message(embed=embed)
         except AttributeError:
             perms = discord.Permissions(administrator=True)
-            admin_role = await interaction.guild.create_role(
+            role = await interaction.guild.create_role(
                 name="Admin",
                 color=discord.Color.red(),
                 permissions=perms,
                 hoist=True,
                 mentionable=True
             )
-            await member.add_roles(admin_role)
-            embed = discord.Embed(
-                title=f"{user.name} is now an Admin! 🥳",
-                color=discord.Color.green()
-            )
-            await interaction.response.send_message(embed=embed)
+            await member.add_roles(role)
+
+        embed = success_embed(f"{user.mention} has been added as an Admin.")
+        embed.set_thumbnail(url=user.display_avatar.url)
+        embed.set_footer(text=f"Added by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+        await interaction.response.send_message(embed=embed)
 
     @admin.command(name="remove", description="Remove an admin")
     async def remove(self, interaction: discord.Interaction, user: discord.User):
         if interaction.user != interaction.guild.owner:
-            embed = discord.Embed(
-                title="**[ALERT]** Only the owner can remove admins! ❌",
-                color=discord.Color.red()
+            await interaction.response.send_message(
+                embed=error_embed("Only the server owner can remove admins."),
+                ephemeral=True
             )
-            await interaction.response.send_message(embed=embed)
             return
 
         guild_id = interaction.guild.id
-        cursor.execute("""DELETE FROM admins WHERE guild_id = ? AND user_id = ?""", (guild_id, user.id))
+        cursor.execute("DELETE FROM admins WHERE guild_id = ? AND user_id = ?", (guild_id, user.id))
         connection.commit()
         role = discord.utils.get(interaction.guild.roles, name="Admin")
         member = interaction.guild.get_member(user.id)
-
         await member.remove_roles(role)
-        embed = discord.Embed(
-            title=f"{user.name} is no longer an Admin ✅",
-            color=discord.Color.green()
-        )
+
+        embed = success_embed(f"{user.mention} has been removed as an Admin.")
+        embed.set_thumbnail(url=user.display_avatar.url)
+        embed.set_footer(text=f"Removed by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
 
-    @admin.command(name="new_text_ch", description="Create new text channel")
+    @admin.command(name="new_text_ch", description="Create a new text channel")
     async def new_text_ch(self, interaction: discord.Interaction, ch_name: str, ch_cat: discord.CategoryChannel):
         if not self.is_admin(interaction):
             await self.send_no_permission(interaction, "create text channels")
             return
 
         await interaction.guild.create_text_channel(ch_name, category=ch_cat)
-        embed = discord.Embed(
-            title=f"Text channel `{ch_name}` has been created in category `{ch_cat.name}`✅",
-            color=discord.Color.green()
-        )
+        embed = success_embed(f"Text channel **#{ch_name}** created in **{ch_cat.name}**.")
+        embed.set_footer(text=f"Created by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
 
-    @admin.command(name="del_text_ch", description="Delete text channel")
+    @admin.command(name="del_text_ch", description="Delete a text channel")
     async def del_text_ch(self, interaction: discord.Interaction, channel: discord.TextChannel):
         if not self.is_admin(interaction):
             await self.send_no_permission(interaction, "delete text channels")
             return
 
+        name = channel.name
         await channel.delete()
-        embed = discord.Embed(
-            title=f"Text channel `{channel.name}` has been deleted ✅",
-            color=discord.Color.green()
-        )
+        embed = success_embed(f"Text channel **#{name}** has been deleted.")
+        embed.set_footer(text=f"Deleted by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
 
-    @admin.command(name="new_voice_ch", description="Create new voice channel")
+    @admin.command(name="new_voice_ch", description="Create a new voice channel")
     async def new_voice_ch(self, interaction: discord.Interaction, ch_name: str, ch_cat: discord.CategoryChannel):
         if not self.is_admin(interaction):
             await self.send_no_permission(interaction, "create voice channels")
             return
 
         await interaction.guild.create_voice_channel(ch_name, category=ch_cat)
-        embed = discord.Embed(
-            title=f"Voice channel `{ch_name}` has been created ✅",
-            color=discord.Color.green()
-        )
+        embed = success_embed(f"Voice channel **{ch_name}** created in **{ch_cat.name}**.")
+        embed.set_footer(text=f"Created by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
 
-    @admin.command(name="del_voice_ch", description="Delete voice channel")
-    async def del_voice_ch(self, interaction: discord.Interaction, ch_name: discord.VoiceChannel):
+    @admin.command(name="del_voice_ch", description="Delete a voice channel")
+    async def del_voice_ch(self, interaction: discord.Interaction, channel: discord.VoiceChannel):
         if not self.is_admin(interaction):
             await self.send_no_permission(interaction, "delete voice channels")
             return
 
-        await ch_name.delete()
-        embed = discord.Embed(
-            title=f"Voice channel `{ch_name}` has been deleted ✅",
-            color=discord.Color.green()
-        )
+        name = channel.name
+        await channel.delete()
+        embed = success_embed(f"Voice channel **{name}** has been deleted.")
+        embed.set_footer(text=f"Deleted by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
 
-    @admin.command(name="new_category", description="Create new category")
+    @admin.command(name="new_category", description="Create a new category")
     async def new_category(self, interaction: discord.Interaction, name: str):
         if not self.is_admin(interaction):
             await self.send_no_permission(interaction, "create categories")
             return
 
         await interaction.guild.create_category(name=name)
-        embed = discord.Embed(
-            title=f"Category `{name}` has been created ✅",
-            color=discord.Color.green()
-        )
+        embed = success_embed(f"Category **{name}** has been created.")
+        embed.set_footer(text=f"Created by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
 
-    @admin.command(name="del_category", description="Delete category")
+    @admin.command(name="del_category", description="Delete a category")
     async def del_category(self, interaction: discord.Interaction, category: discord.CategoryChannel):
         if not self.is_admin(interaction):
             await self.send_no_permission(interaction, "delete categories")
             return
 
+        name = category.name
         await category.delete()
-        embed = discord.Embed(
-            title=f"Category `{category.name}` has been deleted ✅",
-            color=discord.Color.green()
-        )
+        embed = success_embed(f"Category **{name}** has been deleted.")
+        embed.set_footer(text=f"Deleted by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
 
-    @admin.command(name="new_private_category")
+    @admin.command(name="new_private_category", description="Create a new admin-only private category")
     async def new_private_category(self, interaction: discord.Interaction, name: str):
         if not self.is_admin(interaction):
             await self.send_no_permission(interaction, "create private categories")
@@ -260,62 +254,252 @@ class Admin(commands.Cog):
 
         guild = interaction.guild
         admin_role = discord.utils.get(guild.roles, name="Admin")
-
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(view_channel=False),
             admin_role: discord.PermissionOverwrite(view_channel=True)
         }
 
         await guild.create_category(name, overwrites=overwrites)
-        embed = discord.Embed(
-            title=f"Private category `{name}` created ✅ (Admins only)",
-            color=discord.Color.green()
-        )
+        embed = success_embed(f"Private category **{name}** has been created.\n🔒  Visible to Admins only.")
+        embed.set_footer(text=f"Created by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
 
-    @admin.command(name="give_role", description="Give role to a user (or everyone)")
+    @admin.command(name="give_role", description="Give a role to a user (or everyone)")
     async def add_role(self, interaction: discord.Interaction, role: discord.Role, user: discord.Member | None = None):
         if not self.is_admin(interaction):
             await self.send_no_permission(interaction, "give roles")
             return
 
         if interaction.user.id != interaction.guild.owner_id and role.name == "Admin":
-            embed = discord.Embed(
-                title="**[ALERT]** You don't have the permission to give Admin roles! ❌",
-                color=discord.Color.red()
+            await interaction.response.send_message(
+                embed=error_embed("Only the server owner can give the Admin role."),
+                ephemeral=True
             )
-            await interaction.response.send_message(embed=embed)
             return
 
         if user:
             await user.add_roles(role)
-            embed = discord.Embed(
-                title=f"Giving role `{role.name}` to {user.mention}...",
-                color=discord.Color.brand_green()
-            )
+            embed = success_embed(f"Gave {role.mention} to {user.mention}.")
+            embed.set_thumbnail(url=user.display_avatar.url)
+            embed.set_footer(text=f"Actioned by {interaction.user}", icon_url=interaction.user.display_avatar.url)
             await interaction.response.send_message(embed=embed)
         else:
             await interaction.response.defer()
-            embed = discord.Embed(
-                title=f"Giving role `{role.name}` to everyone...",
-                color=discord.Color.brand_green()
+            await interaction.followup.send(
+                embed=info_embed(f"Distributing {role.name}...", f"Giving **{role.name}** to all members. This may take a while.")
             )
-            await interaction.followup.send(embed=embed)
 
+            success, failed = 0, 0
             for member in interaction.guild.members:
                 try:
                     await member.add_roles(role)
-                    embed = discord.Embed(
-                        title=f"`{member.name}` receieved `{role.name}` ✅"
-                    )
-                    await interaction.followup.send(embed=embed)
+                    success += 1
                     await asyncio.sleep(0.5)
                 except discord.Forbidden:
+                    failed += 1
                     continue
-            embed = discord.Embed(
-                title=f"Gave role `{role.name}` to everyone ✅"
+
+            result_embed = success_embed(f"Finished distributing **{role.name}**.")
+            result_embed.add_field(name="✅ Succeeded", value=str(success), inline=True)
+            if failed:
+                result_embed.add_field(name="❌ Failed", value=str(failed), inline=True)
+            result_embed.set_footer(text=f"Actioned by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+            await interaction.followup.send(embed=result_embed)
+
+    @admin.command(name="take_role", description="Remove a role from a user (or everyone)")
+    async def take_role(self, interaction: discord.Interaction, role: discord.Role, user: discord.Member | None = None):
+        if not self.is_admin(interaction):
+            await self.send_no_permission(interaction, "take roles")
+            return
+
+        if interaction.user.id != interaction.guild.owner_id and role.name == "Admin":
+            await interaction.response.send_message(
+                embed=error_embed("Only the server owner can remove the Admin role."),
+                ephemeral=True
             )
-            await interaction.followup.send(embed=embed)
+            return
+
+        if user:
+            await user.remove_roles(role)
+            embed = success_embed(f"Removed {role.mention} from {user.mention}.")
+            embed.set_thumbnail(url=user.display_avatar.url)
+            embed.set_footer(text=f"Actioned by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+            await interaction.response.send_message(embed=embed)
+        else:
+            await interaction.response.defer()
+            await interaction.followup.send(
+                embed=info_embed(f"Removing {role.name}...", f"Removing **{role.name}** from all members. This may take a while.")
+            )
+
+            success, failed = 0, 0
+            for member in interaction.guild.members:
+                try:
+                    await member.remove_roles(role)
+                    success += 1
+                    await asyncio.sleep(0.5)
+                except discord.Forbidden:
+                    failed += 1
+                    continue
+
+            result_embed = success_embed(f"Finished removing **{role.name}**.")
+            result_embed.add_field(name="✅ Succeeded", value=str(success), inline=True)
+            if failed:
+                result_embed.add_field(name="❌ Failed", value=str(failed), inline=True)
+            result_embed.set_footer(text=f"Actioned by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+            await interaction.followup.send(embed=result_embed)
+
+    @admin.command(name="warn", description="Issue a warning to a member")
+    async def warn(self, interaction: discord.Interaction, user: discord.Member, reason: str):
+        if not self.is_admin(interaction):
+            await self.send_no_permission(interaction, "warn members")
+            return
+
+        cursor.execute(
+            "INSERT INTO warnings (guild_id, user_id, reason, warned_by) VALUES (?, ?, ?, ?)",
+            (interaction.guild_id, user.id, reason, interaction.user.id)
+        )
+        connection.commit()
+
+        cursor.execute(
+            "SELECT COUNT(*) FROM warnings WHERE guild_id = ? AND user_id = ?",
+            (interaction.guild_id, user.id)
+        )
+        total_warnings = cursor.fetchone()[0]
+
+        embed = discord.Embed(title="Warning Issued", color=0xf39c12)
+        embed.set_author(name=str(user), icon_url=user.display_avatar.url)
+        embed.set_thumbnail(url=user.display_avatar.url)
+        embed.add_field(name="Member", value=user.mention, inline=True)
+        embed.add_field(name="Total Warnings", value=str(total_warnings), inline=True)
+        embed.add_field(name="Reason", value=reason, inline=False)
+        embed.set_footer(text=f"Warned by {interaction.user} • ID: {user.id}", icon_url=interaction.user.display_avatar.url)
+        await interaction.response.send_message(embed=embed)
+
+        try:
+            dm_embed = discord.Embed(
+                title=f"⚠️ You received a warning in **{interaction.guild.name}**",
+                color=0xf39c12
+            )
+            dm_embed.add_field(name="Reason", value=reason, inline=False)
+            dm_embed.add_field(name="Total Warnings", value=str(total_warnings), inline=True)
+            dm_embed.set_footer(text=f"Issued by {interaction.user}")
+            await user.send(embed=dm_embed)
+        except discord.Forbidden:
+            pass
+
+    @admin.command(name="userinfo", description="Display full information about a user")
+    async def userinfo(self, interaction: discord.Interaction, user: discord.Member):
+        if not self.is_admin(interaction):
+            await self.send_no_permission(interaction, "look up user info")
+            return
+
+        await interaction.response.defer()
+
+        # Warnings from DB
+        cursor.execute(
+            "SELECT reason, warned_by, timestamp FROM warnings WHERE guild_id = ? AND user_id = ? ORDER BY timestamp DESC",
+            (interaction.guild_id, user.id)
+        )
+        warning_rows = cursor.fetchall()
+        total_warnings = len(warning_rows)
+
+        # Account & identity
+        created_at = discord.utils.format_dt(user.created_at, style="F")
+        created_ago = discord.utils.format_dt(user.created_at, style="R")
+        account_age_days = (discord.utils.utcnow() - user.created_at).days
+
+        # Server membership
+        joined_at = discord.utils.format_dt(user.joined_at, style="F") if user.joined_at else "Unknown"
+        joined_ago = discord.utils.format_dt(user.joined_at, style="R") if user.joined_at else ""
+
+        rejoined_note = ""
+        if user.joined_at:
+            days_after_creation = (user.joined_at - user.created_at).days
+            if days_after_creation > 30:
+                rejoined_note = f"\n⚠️ Joined {days_after_creation} days after account creation — may have left & rejoined."
+
+        # Roles (excluding @everyone)
+        roles = [r.mention for r in reversed(user.roles) if r.name != "@everyone"]
+        roles_display = ", ".join(roles) if roles else "None"
+
+        # Permissions highlight
+        key_perms = []
+        if user.guild_permissions.administrator:
+            key_perms.append("Administrator")
+        if user.guild_permissions.manage_guild:
+            key_perms.append("Manage Server")
+        if user.guild_permissions.manage_roles:
+            key_perms.append("Manage Roles")
+        if user.guild_permissions.manage_channels:
+            key_perms.append("Manage Channels")
+        if user.guild_permissions.ban_members:
+            key_perms.append("Ban Members")
+        if user.guild_permissions.kick_members:
+            key_perms.append("Kick Members")
+        if user.guild_permissions.moderate_members:
+            key_perms.append("Timeout Members")
+        perms_display = ", ".join(key_perms) if key_perms else "None"
+
+        # Status & activity
+        status_map = {
+            discord.Status.online: "🟢 Online",
+            discord.Status.idle: "🌙 Idle",
+            discord.Status.dnd: "🔴 Do Not Disturb",
+            discord.Status.offline: "⚫ Offline"
+        }
+        status = status_map.get(user.status, "Unknown")
+        activity = str(user.activity) if user.activity else "None"
+
+        # Timeout
+        timed_out = ""
+        if user.timed_out_until and user.timed_out_until > discord.utils.utcnow():
+            timed_out = discord.utils.format_dt(user.timed_out_until, style="R")
+
+        embed = discord.Embed(
+            color=user.color if user.color != discord.Color.default() else 0x3498db
+        )
+        embed.set_author(name=f"{user} {'🤖' if user.bot else ''}", icon_url=user.display_avatar.url)
+        embed.set_thumbnail(url=user.display_avatar.url)
+
+        embed.add_field(name="Display Name", value=user.display_name, inline=True)
+        embed.add_field(name="User ID", value=f"`{user.id}`", inline=True)
+        embed.add_field(name="Status", value=status, inline=True)
+
+        embed.add_field(
+            name="Account Created",
+            value=f"{created_at}\n{created_ago} — {account_age_days} days old",
+            inline=False
+        )
+        embed.add_field(
+            name="Joined Server",
+            value=f"{joined_at}\n{joined_ago}{rejoined_note}",
+            inline=False
+        )
+
+        if timed_out:
+            embed.add_field(name="⏱️ Timed Out", value=f"Expires {timed_out}", inline=False)
+
+        embed.add_field(name="Activity", value=activity, inline=True)
+        embed.add_field(name="Key Permissions", value=perms_display, inline=False)
+        embed.add_field(name=f"Roles ({len(roles)})", value=roles_display[:1024], inline=False)
+
+        if total_warnings > 0:
+            warnings_text = "\n".join(
+                f"`{row[2]}` — {row[0]} (by <@{row[1]}>)"
+                for row in warning_rows[:5]
+            )
+            if total_warnings > 5:
+                warnings_text += f"\n*...and {total_warnings - 5} more*"
+            embed.add_field(name=f"⚠️ Warnings ({total_warnings})", value=warnings_text, inline=False)
+        else:
+            embed.add_field(name="⚠️ Warnings", value="None", inline=False)
+
+        embed.set_footer(
+            text=f"Requested by {interaction.user} • {interaction.guild.name}",
+            icon_url=interaction.user.display_avatar.url
+        )
+
+        await interaction.followup.send(embed=embed)
 
     @admin.command(name="setup_server", description="Sets up a basic server model with categories and channels")
     async def setup_server(self, interaction: discord.Interaction):
@@ -338,27 +522,14 @@ class Admin(commands.Cog):
             except Exception as e:
                 print(f"couldnt delete category: {category.name} -", e)
 
-        # all channels in 'about' will be read only
         about = await interaction.guild.create_category(name="About")
-        embed = discord.Embed(
-            title=f"Category `About` has been created ✅",
-            color=discord.Color.green()
-        )
-        await interaction.followup.send(embed=embed)
-        # all channels in 'text' will be accessable by @everyone
+        await interaction.followup.send(embed=success_embed("Category **About** created."))
+
         text = await interaction.guild.create_category(name="Text")
-        embed = discord.Embed(
-            title=f"Category `Text` has been created ✅",
-            color=discord.Color.green()
-        )
-        await interaction.followup.send(embed=embed)
-        # all channels in 'voice' will be accessable by @everyone (except private admin vc)
+        await interaction.followup.send(embed=success_embed("Category **Text** created."))
+
         voice = await interaction.guild.create_category(name="Voice")
-        embed = discord.Embed(
-            title=f"Category `Voice` has been created ✅",
-            color=discord.Color.green()
-        )
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=success_embed("Category **Voice** created."))
 
         # @everyone read only
         overwrites = {
@@ -378,18 +549,12 @@ class Admin(commands.Cog):
 
         for name in about_ch_names:
             await interaction.guild.create_text_channel(name=name, category=about, overwrites=overwrites)
-            embed = discord.Embed(
-                title=f"Text channel `{name}` has been created in category `About`✅",
-                color=discord.Color.green()
-            )
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=success_embed(f"**#{name}** created in **About**."))
+
         for name in text_ch_names:
             await interaction.guild.create_text_channel(name=name, category=text)
-            embed = discord.Embed(
-                title=f"Text channel `{name}` has been created in category `Text`✅",
-                color=discord.Color.green()
-            )
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=success_embed(f"**#{name}** created in **Text**."))
+
         for name in voice_ch_names:
             if name == "Voice Trio":
                 await interaction.guild.create_voice_channel(name=name, category=voice, user_limit=3)
@@ -397,11 +562,7 @@ class Admin(commands.Cog):
                 await interaction.guild.create_voice_channel(name=name, category=voice, user_limit=2)
             else:
                 await interaction.guild.create_voice_channel(name=name, category=voice)
-            embed = discord.Embed(
-                title=f"Voice channel `{name}` has been created in category `Voice`✅",
-                color=discord.Color.green()
-            )
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=success_embed(f"**{name}** created in **Voice**."))
 
         for channel in interaction.guild.channels:
             try:
@@ -410,7 +571,7 @@ class Admin(commands.Cog):
             except Exception as e:
                 print(f"couldnt delete channel: {channel.name} -", e)
 
-    @admin.command(name="wipe", description="Delete every category and every channel in the server. A fresh start.")
+    @admin.command(name="wipe", description="Delete every category and every channel in the server.")
     async def wipe(self, interaction: discord.Interaction):
         if not self.is_admin(interaction):
             await self.send_no_permission(interaction, "wipe the server")
@@ -431,12 +592,12 @@ class Admin(commands.Cog):
             except Exception as e:
                 print(f"couldnt delete category: {category.name} -", e)
 
+        await interaction.followup.send(embed=success_embed("Server has been wiped."))
+
     @admin.command(name="clear_roles", description="Deletes all roles")
     async def clear_roles(self, interaction: discord.Interaction):
         if not self.is_admin(interaction):
-            await interaction.response.send_message(
-                "**[ALERT]** You don't have permission to wipe roles ❌", ephemeral=True
-            )
+            await self.send_no_permission(interaction, "wipe roles")
             return
 
         await interaction.response.defer()
@@ -459,152 +620,8 @@ class Admin(commands.Cog):
             except Exception:
                 continue
 
-        embed = discord.Embed(
-            title="Roles wiped ✅",
-            description=f"Successfully deleted: **{deleted_count}**",
-            color=discord.Color.green()
-        )
-
-        await interaction.followup.send(embed=embed)
-    
-    @admin.command(name="warn", description="Issue a warning to a member")
-    async def warn(self, interaction: discord.Interaction, user: discord.Member, reason: str):
-        if not self.is_admin(interaction):
-            await self.send_no_permission(interaction, "warn members")
-            return
-
-        cursor.execute(
-            "INSERT INTO warnings (guild_id, user_id, reason, warned_by) VALUES (?, ?, ?, ?)",
-            (interaction.guild_id, user.id, reason, interaction.user.id)
-        )
-        connection.commit()
-
-        cursor.execute(
-            "SELECT COUNT(*) FROM warnings WHERE guild_id = ? AND user_id = ?",
-            (interaction.guild_id, user.id)
-        )
-        total_warnings = cursor.fetchone()[0]
-
-        embed = discord.Embed(
-            title=f"⚠️ {user.display_name} has been warned",
-            color=discord.Color.yellow()
-        )
-        embed.add_field(name="Reason", value=reason, inline=False)
-        embed.add_field(name="Warned by", value=interaction.user.mention, inline=True)
-        embed.add_field(name="Total warnings", value=str(total_warnings), inline=True)
-        embed.set_footer(text=f"User ID: {user.id}")
-        await interaction.response.send_message(embed=embed)
-
-        try:
-            dm_embed = discord.Embed(
-                title=f"⚠️ You have been warned in {interaction.guild.name}",
-                color=discord.Color.yellow()
-            )
-            dm_embed.add_field(name="Reason", value=reason, inline=False)
-            dm_embed.add_field(name="Total warnings", value=str(total_warnings), inline=True)
-            await user.send(embed=dm_embed)
-        except discord.Forbidden:
-            pass
-    
-    @admin.command(name="userinfo", description="Display full information about a user")
-    async def userinfo(self, interaction: discord.Interaction, user: discord.Member):
-        if not self.is_admin(interaction):
-            await self.send_no_permission(interaction, "look up user info")
-            return
-
-        await interaction.response.defer()
-
-        # warnings from DB
-        cursor.execute(
-            "SELECT reason, warned_by, timestamp FROM warnings WHERE guild_id = ? AND user_id = ? ORDER BY timestamp DESC",
-            (interaction.guild_id, user.id)
-        )
-        warning_rows = cursor.fetchall()
-        total_warnings = len(warning_rows)
-        created_at = discord.utils.format_dt(user.created_at, style="F")
-        created_ago = discord.utils.format_dt(user.created_at, style="R")
-        account_age_days = (discord.utils.utcnow() - user.created_at).days
-
-        joined_at = discord.utils.format_dt(user.joined_at, style="F") if user.joined_at else "Unknown"
-        joined_ago = discord.utils.format_dt(user.joined_at, style="R") if user.joined_at else ""
-
-        rejoined_note = ""
-        if user.joined_at:
-            days_after_creation = (user.joined_at - user.created_at).days
-            if days_after_creation > 30:
-                rejoined_note = f" (joined {days_after_creation} days after account creation — may have left & rejoined)"
-
-        roles = [r.mention for r in reversed(user.roles) if r.name != "@everyone"]
-        roles_display = ", ".join(roles) if roles else "None"
-
-        key_perms = []
-        if user.guild_permissions.administrator:
-            key_perms.append("Administrator")
-        if user.guild_permissions.manage_guild:
-            key_perms.append("Manage Server")
-        if user.guild_permissions.manage_roles:
-            key_perms.append("Manage Roles")
-        if user.guild_permissions.manage_channels:
-            key_perms.append("Manage Channels")
-        if user.guild_permissions.ban_members:
-            key_perms.append("Ban Members")
-        if user.guild_permissions.kick_members:
-            key_perms.append("Kick Members")
-        if user.guild_permissions.moderate_members:
-            key_perms.append("Timeout Members")
-        perms_display = ", ".join(key_perms) if key_perms else "None"
-
-        status_map = {
-            discord.Status.online: "🟢 Online",
-            discord.Status.idle: "🌙 Idle",
-            discord.Status.dnd: "🔴 Do Not Disturb",
-            discord.Status.offline: "⚫ Offline"
-        }
-        status = status_map.get(user.status, "Unknown")
-        activity = str(user.activity) if user.activity else "None"
-
-        timed_out = ""
-        if user.timed_out_until and user.timed_out_until > discord.utils.utcnow():
-            timed_out = discord.utils.format_dt(user.timed_out_until, style="R")
-
-        embed = discord.Embed(
-            title=f"User Info — {user}",
-            color=user.color if user.color != discord.Color.default() else discord.Color.blurple()
-        )
-
-        if user.avatar:
-            embed.set_thumbnail(url=user.avatar.url)
-
-        embed.add_field(name="Display Name", value=user.display_name, inline=True)
-        embed.add_field(name="Username", value=str(user), inline=True)
-        embed.add_field(name="User ID", value=str(user.id), inline=True)
-        embed.add_field(name="Account Created", value=f"{created_at} ({created_ago})\n{account_age_days} days old", inline=False)
-
-        embed.add_field(name="Joined Server", value=f"{joined_at} ({joined_ago}){rejoined_note}", inline=False)
-
-        embed.add_field(name="Bot", value="Yes" if user.bot else "No", inline=True)
-
-        embed.add_field(name="Status", value=status, inline=True)
-        embed.add_field(name="Activity", value=activity, inline=True)
-
-        if timed_out:
-            embed.add_field(name="⏱️ Timed Out Until", value=timed_out, inline=False)
-
-        embed.add_field(name="Key Permissions", value=perms_display, inline=False)
-
-
-        embed.add_field(name=f"Roles ({len(roles)})", value=roles_display[:1024], inline=False)
-
-
-        embed.add_field(name=f"⚠️ Warnings ({total_warnings})", value=(
-            "\n".join(
-                f"`{row[2]}` — {row[0]} (by <@{row[1]}>)"
-                for row in warning_rows[:5]
-            ) + ("\n...and more" if total_warnings > 5 else "")
-        ) if total_warnings > 0 else "None", inline=False)
-
-        embed.set_footer(text=f"Requested by {interaction.user} • {interaction.guild.name}")
-
+        embed = success_embed(f"Deleted **{deleted_count}** role(s).")
+        embed.set_footer(text=f"Actioned by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.followup.send(embed=embed)
 
 
