@@ -10,6 +10,8 @@ load_dotenv()
 TOKEN = os.getenv("TOKEN")
 GUILD = os.getenv("GUILD")
 
+discord.opus.load_opus('libopus.so.0')
+
 class Bot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.all()
@@ -23,6 +25,7 @@ class Bot(commands.Bot):
         await self.load_extension("cogs.core")
         await self.load_extension("cogs.admin")
         await self.load_extension("cogs.user")
+        await self.load_extension("cogs.music")
 
         if GUILD and GUILD.isdigit():
             guild = discord.Object(id=int(GUILD))
@@ -35,6 +38,8 @@ class Bot(commands.Bot):
             logging.info("Synced global commands")
 
     async def on_ready(self):
+        if not discord.opus.is_loaded():
+            discord.opus.load_opus('libopus.so.0')
         logging.basicConfig(level=logging.INFO)
         logging.info("Logged is as ModMeister")
         print("Logged is as ModMeister")
