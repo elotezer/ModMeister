@@ -4,10 +4,10 @@ from discord import app_commands
 from discord.ext import commands
 from discord.utils import get
 import sqlite3
-import textwrap
 
 connection = sqlite3.connect("botdatabase.db")
 cursor = connection.cursor()
+
 
 class Core(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -15,67 +15,107 @@ class Core(commands.Cog):
 
     @app_commands.command(name="ping", description="Is the bot alive?!")
     async def ping(self, interaction: discord.Interaction):
-        embed = discord.Embed(
-            title="Ping-Pong command",
-            description="Pong!",
-            color=discord.Color.blurple()
-        )
+        latency = round(self.bot.latency * 1000)
+        embed = discord.Embed(description=f"🏓  Pong! **{latency}ms**", color=0x3498db)
+        embed.set_footer(text=f"Requested by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="echo", description="Echoes back your message")
     async def echo(self, interaction: discord.Interaction, text: str):
-        embed = discord.Embed(
-            title="Echo command",
-            description=text,
-            color=discord.Color.blurple()
-        )
+        embed = discord.Embed(description=text, color=0x3498db)
+        embed.set_footer(text=f"Sent by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
-
 
     @app_commands.command(name="help", description="Display all bot commands")
     async def help_command(self, interaction: discord.Interaction):
-        help_text = textwrap.dedent("""\
-                **Member commands**
-                    `/ping` Checks if the bot is alive or not
-                    `/echo` Sends you back the same text you provided as parameter
-                    `/roll` Random number between a provided range
-                    `/roll_f` Random number between 0 and 1
-                    `/gpt` Prompt ChatGPT
-                    `/gemini` Prompt Gemini
-
-                **Admin commands**
-                    `/admin add` Add admin role to user
-                    `/admin remove` Remove admin role from user
-                    `/admin list` List of admins
-                    `/admin ban` Ban a member
-                    `/admin unban` Unban a member
-                    `/admin mute` Mute a member for a specified minutes (Timeout)
-                    `/admin unmute` Mute a member for a specified minutes (Timeout)
-                    `/admin new_text_ch` Create new text channel
-                    `/admin del_text_ch` Delete text channel
-                    `/admin new_voice_ch` Create new voice channel
-                    `/admin del_voice_ch` Delete voice channel
-                    `/admin new_private_category` Create new private category
-                    `/admin new_category` Create new category
-                    `/admin new_private_category` Pivate category (Every new channel in this category will be private)
-                    `/admin del_category` Delete category
-                    `/admin give_role` Add role to a user (leave user parameter empty to give everyone)
-                    `/admin setup_server` Wipes the server then creates a basic layout of channels
-                    `/admin wipe` Delete every category and every channel in the server
-                    `/admin clear_roles` Delete every role in the server that can be deleted
-                    
-                    
-                    
-                """)
         embed = discord.Embed(
-            title="ModMeister's commands",
-            description=help_text,
-            color=discord.Color.red()
+            title="ModMeister — Command Reference",
+            color=0x3498db
+        )
+        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+
+        embed.add_field(
+            name="🎲  General",
+            value=(
+                "`/ping` — Check if the bot is alive\n"
+                "`/echo` — Echo back a message\n"
+                "`/roll` — Random integer between a range\n"
+                "`/roll_f` — Random float between 0 and 1\n"
+                "`/serverinfo` — Display detailed server information"
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="🤖  AI",
+            value=(
+                "`/gpt` — Ask ChatGPT\n"
+                "`/gemini` — Ask Gemini"
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="🔨  Moderation",
+            value=(
+                "`/admin kick` — Kick a member\n"
+                "`/admin ban` — Ban a member\n"
+                "`/admin unban` — Unban a member\n"
+                "`/admin mute` — Timeout a member for a set duration\n"
+                "`/admin unmute` — Remove a timeout from a member\n"
+                "`/admin warn` — Issue a warning to a member\n"
+                "`/admin warnings` — View all warnings for a member\n"
+                "`/admin clear_warnings` — Clear all or a specific warning"
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="👑  Admin Management",
+            value=(
+                "`/admin add` — Grant admin to a user\n"
+                "`/admin remove` — Revoke admin from a user\n"
+                "`/admin userinfo` — Full profile & history of a user"
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="🎭  Roles",
+            value=(
+                "`/admin give_role` — Give a role to a user or everyone\n"
+                "`/admin take_role` — Remove a role from a user or everyone\n"
+                "`/admin clear_roles` — Delete all deletable roles"
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="📁  Channels & Categories",
+            value=(
+                "`/admin new_text_ch` — Create a text channel\n"
+                "`/admin del_text_ch` — Delete a text channel\n"
+                "`/admin new_voice_ch` — Create a voice channel\n"
+                "`/admin del_voice_ch` — Delete a voice channel\n"
+                "`/admin new_category` — Create a category\n"
+                "`/admin del_category` — Delete a category\n"
+                "`/admin new_private_category` — Create an admin-only category"
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="🛠️  Server",
+            value=(
+                "`/admin setup_server` — Wipe and rebuild a basic server layout\n"
+                "`/admin wipe` — Delete all channels and categories"
+            ),
+            inline=False
         )
 
         embed.set_footer(text="ModMeister 2026")
-
         await interaction.response.send_message(embed=embed)
+
 
 class EventsCog(commands.Cog):
     def __init__(self, bot):
@@ -86,56 +126,43 @@ class EventsCog(commands.Cog):
         ch = get(member.guild.text_channels, name="welcome")
         if ch:
             embed = discord.Embed(
-                title="A New Member Joined Us! 🥳🙌",
-                description=f"Welcome to {member.guild.name}, {member.mention}!",
-                color=discord.Color.gold()
+                description=f"👋  Welcome to **{member.guild.name}**, {member.mention}! Glad to have you here.",
+                color=0xf1c40f
             )
-            await ch.send(embed=embed)
-        elif ch:
-            embed = discord.Embed(
-                title="A New Member Joined Us! 🥳🙌",
-                description=f"Welcome to {member.guild.name}, {member.mention}!",
-                color=discord.Color.gold()
-            )
+            embed.set_author(name="New Member!", icon_url=member.display_avatar.url)
+            embed.set_thumbnail(url=member.display_avatar.url)
+            embed.set_footer(text=f"Member #{member.guild.member_count}")
             await ch.send(embed=embed)
 
-        cursor.execute("""CREATE TABLE IF NOT EXISTS members (guild_id INT, user_id INT)""")
+        cursor.execute("CREATE TABLE IF NOT EXISTS members (guild_id INT, user_id INT)")
         connection.commit()
-
-        cursor.execute("""INSERT INTO members (guild_id, user_id) VALUES (?, ?)""", (member.guild.id, member.id))
+        cursor.execute("INSERT INTO members (guild_id, user_id) VALUES (?, ?)", (member.guild.id, member.id))
         connection.commit()
 
         role = discord.utils.get(member.guild.roles, name="Member")
-        await member.add_roles(role)
+        if role:
+            await member.add_roles(role)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        ch = get(member.guild.text_channels, name="leavers")
-        if not ch:
-            ch = member.guild.system_channel
+        ch = get(member.guild.text_channels, name="leavers") or member.guild.system_channel
+        if ch:
             embed = discord.Embed(
-                title="A Member Left Us! 😖🌧️",
-                description=f"See you soon, {member.name}! 👋",
-                color=discord.Color.dark_blue()
+                description=f"👋  **{member.name}** has left the server. See you around!",
+                color=0x2c3e50
             )
+            embed.set_author(name="Member Left", icon_url=member.display_avatar.url)
+            embed.set_thumbnail(url=member.display_avatar.url)
             await ch.send(embed=embed)
-        elif ch:
-            embed = discord.Embed(
-                title="A Member Left Us! 😖🌧️",
-                description=f"See you soon, {member.name}! 👋",
-                color=discord.Color.dark_blue()
-            )
-            await ch.send(embed=embed)
-        cursor.execute("""DELETE FROM members where guild_id = ? and user_id = ?""", (member.guild.id, member.id))
+
+        cursor.execute("DELETE FROM members WHERE guild_id = ? AND user_id = ?", (member.guild.id, member.id))
         connection.commit()
 
         cursor.execute("SELECT 1 FROM admins WHERE guild_id = ? AND user_id = ?", (member.guild.id, member.id))
         if cursor.fetchone() is not None:
-            cursor.execute("""DELETE
-                              FROM admins
-                              where guild_id = ?
-                                and user_id = ?""", (member.guild.id, member.id))
+            cursor.execute("DELETE FROM admins WHERE guild_id = ? AND user_id = ?", (member.guild.id, member.id))
             connection.commit()
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Core(bot))
