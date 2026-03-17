@@ -1,4 +1,4 @@
-# ModMeister 🤖
+# ModMeister Discord Bot
 
 A comprehensive Discord bot for server moderation, management, music playback, and utility features with AI integration.
 
