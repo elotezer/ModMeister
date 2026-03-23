@@ -6,7 +6,7 @@ sudo apt install -y python3-venv python3-pip nodejs npm git
 sudo npm install pm2 -g
 
 if [ ! -d "ModMeister" ]; then
-    git clone https://github.com/elotezer/ModMeister
+    git clone https://github.com/laszlokonyari/ModMeister
 fi
 
 cd ModMeister
