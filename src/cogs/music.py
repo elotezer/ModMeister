@@ -117,7 +117,8 @@ class Track:
 
     @property
     def duration_fmt(self) -> str:
-        m, s = divmod(self.duration, 60)
+        total_seconds = int(self.duration)
+        m, s = divmod(total_seconds, 60)
         h, m = divmod(m, 60)
         return f"{h}:{m:02}:{s:02}" if h else f"{m}:{s:02}"
 
