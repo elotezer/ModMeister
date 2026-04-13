@@ -10,7 +10,7 @@ load_dotenv()
 TOKEN = os.getenv("TOKEN")
 GUILD = os.getenv("GUILD")
 
-discord.opus.load_opus('libopus.so.0')
+# discord.opus.load_opus('libopus.so.0') 
 
 class Bot(commands.Bot):
     def __init__(self):

@@ -218,6 +218,37 @@ class User(commands.Cog):
 
         await interaction.followup.send(embed=embed)
 
+    @app_commands.command(name="invite", description="Create a server invite link")
+    @app_commands.describe(duration="How long the invite should last (default: 1 day)")
+    @app_commands.choices(duration=[
+        app_commands.Choice(name="30 minutes", value=1800),
+        app_commands.Choice(name="1 hour", value=3600),
+        app_commands.Choice(name="6 hours", value=21600),
+        app_commands.Choice(name="12 hours", value=43200),
+        app_commands.Choice(name="1 day", value=86400),
+        app_commands.Choice(name="7 days", value=604800),
+        app_commands.Choice(name="Never", value=0)
+    ])
+    async def create_invite(self, interaction: discord.Interaction, duration: int = 86400):
+        await interaction.response.defer()
+        channel = interaction.channel
+        if not isinstance(channel, (discord.TextChannel, discord.VoiceChannel, discord.ForumChannel, discord.StageChannel)):
+            await interaction.followup.send("I cannot create an invite for this type of channel.")
+            return
+
+        invite = await channel.create_invite(max_age=duration, unique=True)
+        
+        duration_text = "Never expires" if duration == 0 else f"Expires in <t:{int(invite.created_at.timestamp() + duration)}:R>"
+        
+        embed = discord.Embed(
+            title="Invite Created",
+            description=f"**Link:** {invite.url}\n\n**Channel:** {channel.mention}\n**Duration:** {duration_text}",
+            color=0x3498db
+        )
+        embed.set_footer(text=f"Requested by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+        
+        await interaction.followup.send(embed=embed)
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(User(bot))
