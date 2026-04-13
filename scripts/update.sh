@@ -6,7 +6,7 @@ git pull origin master
 
 ./venv/bin/pip install -r requirements.txt
 
-pm2 restart modmeister-bot
+pm2 start modmeister-bot
 
 echo "--- Frissítés sikeresen befejeződött! ---"
 echo "Logok megtekintése: pm2 logs modmeister-bot"
