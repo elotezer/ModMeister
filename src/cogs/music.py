@@ -37,11 +37,11 @@ SPOTIFY_PLAYLIST_RE = re.compile(r"https?://open\.spotify\.com/playlist/([A-Za-z
 
 
 def success_embed(description: str) -> discord.Embed:
-    return discord.Embed(description=f"✅  {description}", color=0x2ecc71)
+    return discord.Embed(description=f"{description}", color=0x2ecc71)
 
 
 def error_embed(description: str) -> discord.Embed:
-    return discord.Embed(description=f"🚫  {description}", color=0xe74c3c)
+    return discord.Embed(description=f"{description}", color=0xe74c3c)
 
 
 def info_embed(title: str, description: str = "") -> discord.Embed:
@@ -51,6 +51,7 @@ def info_embed(title: str, description: str = "") -> discord.Embed:
 def get_spotify_client() -> spotipy.Spotify | None:
     if not SPOTIFY_CLIENT_ID or not SPOTIFY_CLIENT_SECRET:
         return None
+    
     return spotipy.Spotify(auth_manager=SpotifyClientCredentials(
         client_id=SPOTIFY_CLIENT_ID,
         client_secret=SPOTIFY_CLIENT_SECRET
@@ -58,10 +59,6 @@ def get_spotify_client() -> spotipy.Spotify | None:
 
 
 async def resolve_query(link: str) -> list[str]:
-    """
-    Takes a SoundCloud URL or Spotify URL/link.
-    Returns a list of search queries (SoundCloud search strings) to play.
-    """
     spotify = get_spotify_client()
 
     track_match = SPOTIFY_TRACK_RE.match(link)
@@ -88,7 +85,6 @@ async def resolve_query(link: str) -> list[str]:
 
 
 async def fetch_source(query: str) -> dict | None:
-    """Runs yt-dlp in a thread and returns track info."""
     opts = {**YTDLP_OPTIONS, "noplaylist": True}
 
     def extract():
@@ -97,7 +93,11 @@ async def fetch_source(query: str) -> dict | None:
                 if not SOUNDCLOUD_RE.match(query):
                     info = ydl.extract_info(f"scsearch:{query}", download=False)
                     entries = info.get("entries")
-                    return entries[0] if entries else None
+                    if entries:
+                        return entries[0]
+                    else:
+                        return None
+                
                 return ydl.extract_info(query, download=False)
             except Exception:
                 return None
@@ -120,7 +120,11 @@ class Track:
         total_seconds = int(self.duration)
         m, s = divmod(total_seconds, 60)
         h, m = divmod(m, 60)
-        return f"{h}:{m:02}:{s:02}" if h else f"{m}:{s:02}"
+        
+        if h:
+            return f"{h}:{m:02}:{s:02}"
+        else:
+            return f"{m}:{s:02}"
 
     def now_playing_embed(self) -> discord.Embed:
         embed = discord.Embed(
@@ -131,8 +135,10 @@ class Track:
         embed.add_field(name="Uploader", value=self.uploader, inline=True)
         embed.add_field(name="Duration", value=self.duration_fmt, inline=True)
         embed.add_field(name="Requested by", value=self.requested_by.mention, inline=True)
+        
         if self.thumbnail:
             embed.set_thumbnail(url=self.thumbnail)
+            
         embed.set_footer(
             text=f"Requested by {self.requested_by}",
             icon_url=self.requested_by.display_avatar.url
@@ -148,7 +154,13 @@ class GuildMusicState:
         self.loop: bool = False
 
     def is_playing(self) -> bool:
-        return self.voice_client is not None and self.voice_client.is_playing()
+        if self.voice_client is not None:
+            if self.voice_client.is_playing():
+                return True
+            else:
+                return False
+        else:
+            return False
 
     def clear(self):
         self.queue.clear()
@@ -167,20 +179,22 @@ class Music(commands.Cog):
         return self.states[guild_id]
 
     async def check_voice(self, interaction: discord.Interaction) -> bool:
-        """Returns True if the user is in the same voice channel as the bot. Sends an error if not."""
         state = self.get_state(interaction.guild_id)
+        
         if not interaction.user.voice or not interaction.user.voice.channel:
             await interaction.response.send_message(
                 embed=error_embed("You need to be in a voice channel to use this command."),
                 ephemeral=True
             )
             return False
+            
         if state.voice_client and interaction.user.voice.channel != state.voice_client.channel:
             await interaction.response.send_message(
                 embed=error_embed(f"You need to be in {state.voice_client.channel.mention} to control playback."),
                 ephemeral=True
             )
             return False
+            
         return True
 
     def play_next(self, guild_id: int, channel: discord.TextChannel):
@@ -252,7 +266,7 @@ class Music(commands.Cog):
 
         if len(queries) > 1:
             await interaction.followup.send(
-                embed=info_embed(f"Spotify Playlist", f"Queuing **{len(queries)}** tracks...")
+                embed=info_embed("Spotify Playlist", f"Queuing **{len(queries)}** tracks...")
             )
 
         queued_count = 0
@@ -291,6 +305,7 @@ class Music(commands.Cog):
     async def skip(self, interaction: discord.Interaction):
         if not await self.check_voice(interaction):
             return
+            
         state = self.get_state(interaction.guild_id)
         if not state.is_playing():
             await interaction.response.send_message(
@@ -299,12 +314,13 @@ class Music(commands.Cog):
             return
 
         state.voice_client.stop()
-        await interaction.response.send_message(embed=success_embed("Skipped ⏭️"))
+        await interaction.response.send_message(embed=success_embed("Skipped"))
 
     @app_commands.command(name="stop", description="Stop playback and clear the queue")
     async def stop(self, interaction: discord.Interaction):
         if not await self.check_voice(interaction):
             return
+            
         state = self.get_state(interaction.guild_id)
         if state.voice_client is None:
             await interaction.response.send_message(
@@ -321,6 +337,7 @@ class Music(commands.Cog):
     async def pause(self, interaction: discord.Interaction):
         if not await self.check_voice(interaction):
             return
+            
         state = self.get_state(interaction.guild_id)
         if not state.is_playing():
             await interaction.response.send_message(
@@ -329,12 +346,13 @@ class Music(commands.Cog):
             return
 
         state.voice_client.pause()
-        await interaction.response.send_message(embed=success_embed("Paused ⏸️"))
+        await interaction.response.send_message(embed=success_embed("Paused"))
 
     @app_commands.command(name="resume", description="Resume the paused track")
     async def resume(self, interaction: discord.Interaction):
         if not await self.check_voice(interaction):
             return
+            
         state = self.get_state(interaction.guild_id)
         if state.voice_client is None or not state.voice_client.is_paused():
             await interaction.response.send_message(
@@ -343,7 +361,7 @@ class Music(commands.Cog):
             return
 
         state.voice_client.resume()
-        await interaction.response.send_message(embed=success_embed("Resumed ▶️"))
+        await interaction.response.send_message(embed=success_embed("Resumed"))
 
     @app_commands.command(name="queue", description="Show the current queue")
     async def queue(self, interaction: discord.Interaction):
@@ -359,20 +377,24 @@ class Music(commands.Cog):
 
         if state.current:
             embed.add_field(
-                name="▶️  Now Playing",
-                value=f"**[{state.current.title}]({state.current.webpage_url})** `{state.current.duration_fmt}` — {state.current.requested_by.mention}",
+                name="Now Playing",
+                value=f"**[{state.current.title}]({state.current.webpage_url})** `{state.current.duration_fmt}` - {state.current.requested_by.mention}",
                 inline=False
             )
 
         if state.queue:
             lines = []
             for i, track in enumerate(state.queue[:10], 1):
-                lines.append(f"`{i}.` **[{track.title}]({track.webpage_url})** `{track.duration_fmt}` — {track.requested_by.mention}")
+                lines.append(f"`{i}.` **[{track.title}]({track.webpage_url})** `{track.duration_fmt}` - {track.requested_by.mention}")
             if len(state.queue) > 10:
                 lines.append(f"*...and {len(state.queue) - 10} more*")
             embed.add_field(name="Up Next", value="\n".join(lines), inline=False)
 
-        loop_status = "🔁 Loop: **On**" if state.loop else "🔁 Loop: **Off**"
+        if state.loop:
+            loop_status = "Loop: **On**"
+        else:
+            loop_status = "Loop: **Off**"
+            
         embed.set_footer(text=loop_status)
         await interaction.response.send_message(embed=embed)
 
@@ -380,15 +402,26 @@ class Music(commands.Cog):
     async def loop(self, interaction: discord.Interaction):
         if not await self.check_voice(interaction):
             return
+            
         state = self.get_state(interaction.guild_id)
-        state.loop = not state.loop
-        status = "enabled 🔁" if state.loop else "disabled"
+        
+        if state.loop:
+            state.loop = False
+        else:
+            state.loop = True
+            
+        if state.loop:
+            status = "enabled"
+        else:
+            status = "disabled"
+            
         await interaction.response.send_message(embed=success_embed(f"Loop {status}."))
 
-    @app_commands.command(name="volume", description="Set playback volume (0–100)")
+    @app_commands.command(name="volume", description="Set playback volume (0-100)")
     async def volume(self, interaction: discord.Interaction, level: int):
         if not await self.check_voice(interaction):
             return
+            
         if not 0 <= level <= 100:
             await interaction.response.send_message(
                 embed=error_embed("Volume must be between 0 and 100."), ephemeral=True
@@ -403,7 +436,7 @@ class Music(commands.Cog):
             return
 
         state.voice_client.source.volume = level / 100
-        await interaction.response.send_message(embed=success_embed(f"Volume set to **{level}%** 🔊"))
+        await interaction.response.send_message(embed=success_embed(f"Volume set to **{level}%**"))
 
     @app_commands.command(name="nowplaying", description="Show the currently playing track")
     async def nowplaying(self, interaction: discord.Interaction):
