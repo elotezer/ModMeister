@@ -16,14 +16,29 @@ class Core(commands.Cog):
     @app_commands.command(name="ping", description="Is the bot alive?!")
     async def ping(self, interaction: discord.Interaction):
         latency = round(self.bot.latency * 1000)
-        embed = discord.Embed(description=f"🏓  Pong! **{latency}ms**", color=0x3498db)
-        embed.set_footer(text=f"Requested by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+        
+        embed = discord.Embed(
+            description=f"🏓  Pong! **{latency}ms**", 
+            color=0x3498db
+        )
+        embed.set_footer(
+            text=f"Requested by {interaction.user}", 
+            icon_url=interaction.user.display_avatar.url
+        )
+        
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="echo", description="Echoes back your message")
     async def echo(self, interaction: discord.Interaction, text: str):
-        embed = discord.Embed(description=text, color=0x3498db)
-        embed.set_footer(text=f"Sent by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+        embed = discord.Embed(
+            description=text, 
+            color=0x3498db
+        )
+        embed.set_footer(
+            text=f"Sent by {interaction.user}", 
+            icon_url=interaction.user.display_avatar.url
+        )
+        
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="help", description="Display all bot commands")
@@ -140,6 +155,7 @@ class EventsCog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         ch = get(member.guild.text_channels, name="welcome")
+        
         if ch:
             embed = discord.Embed(
                 description=f"👋  Welcome to **{member.guild.name}**, {member.mention}! Glad to have you here.",
@@ -148,10 +164,12 @@ class EventsCog(commands.Cog):
             embed.set_author(name="New Member!", icon_url=member.display_avatar.url)
             embed.set_thumbnail(url=member.display_avatar.url)
             embed.set_footer(text=f"Member #{member.guild.member_count}")
+            
             await ch.send(embed=embed)
 
         cursor.execute("CREATE TABLE IF NOT EXISTS members (guild_id INT, user_id INT)")
         connection.commit()
+        
         cursor.execute("INSERT INTO members (guild_id, user_id) VALUES (?, ?)", (member.guild.id, member.id))
         connection.commit()
 
@@ -161,7 +179,11 @@ class EventsCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        ch = get(member.guild.text_channels, name="leavers") or member.guild.system_channel
+        ch = get(member.guild.text_channels, name="leavers")
+        
+        if not ch:
+            ch = member.guild.system_channel
+            
         if ch:
             embed = discord.Embed(
                 description=f"👋  **{member.name}** has left the server. See you around!",
@@ -169,12 +191,14 @@ class EventsCog(commands.Cog):
             )
             embed.set_author(name="Member Left", icon_url=member.display_avatar.url)
             embed.set_thumbnail(url=member.display_avatar.url)
+            
             await ch.send(embed=embed)
 
         cursor.execute("DELETE FROM members WHERE guild_id = ? AND user_id = ?", (member.guild.id, member.id))
         connection.commit()
 
         cursor.execute("SELECT 1 FROM admins WHERE guild_id = ? AND user_id = ?", (member.guild.id, member.id))
+        
         if cursor.fetchone() is not None:
             cursor.execute("DELETE FROM admins WHERE guild_id = ? AND user_id = ?", (member.guild.id, member.id))
             connection.commit()
