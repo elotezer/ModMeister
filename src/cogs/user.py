@@ -22,47 +22,67 @@ class User(commands.Cog):
     @app_commands.command(name='roll', description='Roll a random whole number between a selected range')
     async def roll_int(self, interaction: discord.Interaction, x: int, y: int):
         rolled = random.randint(x, y)
+        
         embed = discord.Embed(description=f"🎲  Your roll: **{rolled}**", color=0x3498db)
         embed.add_field(name="Range", value=f"`{x}` — `{y}`", inline=True)
         embed.set_footer(text=f"Rolled by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+        
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name='roll_f', description='Roll a random float number between 0 and 1')
     async def roll_f(self, interaction: discord.Interaction):
         rolled = random.random()
+        
         embed = discord.Embed(description=f"🎲  Your roll: **{rolled:.6f}**", color=0x3498db)
         embed.add_field(name="Range", value="`0.0` — `1.0`", inline=True)
         embed.set_footer(text=f"Rolled by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+        
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="gpt", description="Ask ChatGPT")
     async def gpt(self, interaction: discord.Interaction, prompt: str):
         ai_client = OpenAI(api_key=GPT_KEY)
         await interaction.response.defer(thinking=True)
+        
         resp = ai_client.responses.create(
             model="gpt-5-mini",
             input=prompt,
             store=True
         )
+        
         embed = discord.Embed(
             description=resp.output_text.strip(),
             color=0x74aa9c
         )
         embed.set_author(name="ChatGPT", icon_url="https://cdn.discordapp.com/emojis/1095939132004454430.webp")
-        embed.set_footer(text=f"Q: {prompt[:100]}{'...' if len(prompt) > 100 else ''}", icon_url=interaction.user.display_avatar.url)
+        
+        truncated_prompt = prompt[:100]
+        if len(prompt) > 100:
+            truncated_prompt += "..."
+            
+        embed.set_footer(text=f"Q: {truncated_prompt}", icon_url=interaction.user.display_avatar.url)
+        
         await interaction.followup.send(embed=embed)
 
     @app_commands.command(name="gemini", description="Ask Gemini")
     async def gemini(self, interaction: discord.Interaction, prompt: str):
         await interaction.response.defer(thinking=True)
+        
         client = genai.Client()
         response = client.models.generate_content(model="gemini-3-flash-preview", contents=prompt)
+        
         embed = discord.Embed(
             description=response.text.strip(),
             color=0x4285f4
         )
         embed.set_author(name="Gemini", icon_url="https://cdn.discordapp.com/emojis/1197557441210994698.webp")
-        embed.set_footer(text=f"Q: {prompt[:100]}{'...' if len(prompt) > 100 else ''}", icon_url=interaction.user.display_avatar.url)
+        
+        truncated_prompt = prompt[:100]
+        if len(prompt) > 100:
+            truncated_prompt += "..."
+            
+        embed.set_footer(text=f"Q: {truncated_prompt}", icon_url=interaction.user.display_avatar.url)
+        
         await interaction.followup.send(embed=embed)
 
 
@@ -72,34 +92,73 @@ class User(commands.Cog):
         guild = interaction.guild
 
         total_members = guild.member_count
-        humans = sum(1 for m in guild.members if not m.bot)
-        bots = sum(1 for m in guild.members if m.bot)
-        online = sum(1 for m in guild.members if m.status != discord.Status.offline)
+        humans = 0
+        bots = 0
+        online = 0
+        
+        for member in guild.members:
+            if member.bot:
+                bots += 1
+            else:
+                humans += 1
+                
+            if member.status != discord.Status.offline:
+                online += 1
 
         text_channels = len(guild.text_channels)
         voice_channels = len(guild.voice_channels)
         categories = len(guild.categories)
-        forums = len([c for c in guild.channels if isinstance(c, discord.ForumChannel)])
         stage_channels = len(guild.stage_channels)
         threads = len(guild.threads)
+        
+        forums = 0
+        for channel in guild.channels:
+            if isinstance(channel, discord.ForumChannel):
+                forums += 1
 
         total_roles = len(guild.roles) - 1
-        role_list = [r.mention for r in reversed(guild.roles) if r.name != "@everyone"]
-        roles_display = ", ".join(role_list[:20]) + (f" *+{total_roles - 20} more*" if total_roles > 20 else "")
+        role_list = []
+        for role in reversed(guild.roles):
+            if role.name != "@everyone":
+                role_list.append(role.mention)
+                
+        roles_display = ""
+        for role_mention in role_list[:20]:
+            if roles_display != "":
+                roles_display += ", "
+            roles_display += role_mention
+            
+        if total_roles > 20:
+            roles_display += f" *+{total_roles - 20} more*"
 
         total_emoji = len(guild.emojis)
-        animated_emoji = sum(1 for e in guild.emojis if e.animated)
+        animated_emoji = 0
+        for emoji in guild.emojis:
+            if emoji.animated:
+                animated_emoji += 1
+                
         static_emoji = total_emoji - animated_emoji
         total_stickers = len(guild.stickers)
 
         boost_level = guild.premium_tier
-        boost_count = guild.premium_subscription_count or 0
+        
+        if guild.premium_subscription_count is not None:
+            boost_count = guild.premium_subscription_count
+        else:
+            boost_count = 0
+            
         boosters = len(guild.premium_subscribers)
 
         created_at = discord.utils.format_dt(guild.created_at, style="F")
         created_ago = discord.utils.format_dt(guild.created_at, style="R")
 
-        features = [f.replace("_", " ").title() for f in guild.features] if guild.features else ["None"]
+        features = []
+        if guild.features:
+            for feature in guild.features:
+                formatted_feature = feature.replace("_", " ").title()
+                features.append(formatted_feature)
+        else:
+            features.append("None")
 
         verification_map = {
             discord.VerificationLevel.none: "None",
@@ -129,16 +188,26 @@ class User(commands.Cog):
         nsfw_level = nsfw_map.get(guild.nsfw_level, "Unknown")
         mfa = mfa_map.get(guild.mfa_level, "Unknown")
 
-        embed = discord.Embed(
-            color=guild.me.color if guild.me.color != discord.Color.default() else 0x3498db
-        )
-        embed.set_author(name=guild.name, icon_url=guild.icon.url if guild.icon else None)
+        embed_color = 0x3498db
+        if guild.me.color != discord.Color.default():
+            embed_color = guild.me.color
+
+        embed = discord.Embed(color=embed_color)
+        
         if guild.icon:
+            embed.set_author(name=guild.name, icon_url=guild.icon.url)
             embed.set_thumbnail(url=guild.icon.url)
+        else:
+            embed.set_author(name=guild.name)
+            
         if guild.banner:
             embed.set_image(url=guild.banner.url)
 
-        embed.add_field(name="Owner", value=guild.owner.mention if guild.owner else "Unknown", inline=True)
+        owner_mention = "Unknown"
+        if guild.owner:
+            owner_mention = guild.owner.mention
+
+        embed.add_field(name="Owner", value=owner_mention, inline=True)
         embed.add_field(name="Server ID", value=f"`{guild.id}`", inline=True)
         embed.add_field(name="Created", value=f"{created_at}\n{created_ago}", inline=False)
 
@@ -148,20 +217,31 @@ class User(commands.Cog):
             inline=True
         )
 
+        channels_text = f"💬 Text: **{text_channels}**\n"
+        channels_text += f"🔊 Voice: **{voice_channels}**\n"
+        channels_text += f"📁 Categories: **{categories}**"
+        
+        if threads > 0:
+            channels_text += f"\n🧵 Threads: **{threads}**"
+        if stage_channels > 0:
+            channels_text += f"\n🎭 Stage: **{stage_channels}**"
+        if forums > 0:
+            channels_text += f"\n📋 Forums: **{forums}**"
+
+        total_channels = text_channels + voice_channels + stage_channels + forums
         embed.add_field(
-            name=f"Channels ({text_channels + voice_channels + stage_channels + forums})",
-            value=(
-                f"💬 Text: **{text_channels}**\n"
-                f"🔊 Voice: **{voice_channels}**\n"
-                f"📁 Categories: **{categories}**\n"
-                + (f"🧵 Threads: **{threads}**\n" if threads else "")
-                + (f"🎭 Stage: **{stage_channels}**\n" if stage_channels else "")
-                + (f"📋 Forums: **{forums}**" if forums else "")
-            ),
+            name=f"Channels ({total_channels})",
+            value=channels_text,
             inline=True
         )
 
-        boost_bar = "🟣" * boost_count + "⚫" * max(0, 14 - boost_count)
+        boost_bar = ""
+        for i in range(14):
+            if i < boost_count:
+                boost_bar += "🟣"
+            else:
+                boost_bar += "⚫"
+                
         embed.add_field(
             name=f"Boosts — Level {boost_level}",
             value=f"{boost_bar}\n**{boost_count}** boosts from **{boosters}** booster(s)",
@@ -190,16 +270,21 @@ class User(commands.Cog):
             inline=False
         )
 
+        final_roles_display = "None"
+        if roles_display:
+            final_roles_display = roles_display[:1024]
+            
         embed.add_field(
             name=f"Roles ({total_roles})",
-            value=roles_display[:1024] if roles_display else "None",
+            value=final_roles_display,
             inline=False
         )
 
         if guild.features:
+            joined_features = ", ".join(features)[:1024]
             embed.add_field(
                 name="Server Features",
-                value=", ".join(features)[:1024],
+                value=joined_features,
                 inline=False
             )
 
@@ -209,6 +294,7 @@ class User(commands.Cog):
             embed.add_field(name="Rules Channel", value=guild.rules_channel.mention, inline=True)
         if guild.public_updates_channel:
             embed.add_field(name="Updates Channel", value=guild.public_updates_channel.mention, inline=True)
+            
         embed.add_field(name="Preferred Locale", value=str(guild.preferred_locale), inline=True)
 
         embed.set_footer(
@@ -232,13 +318,28 @@ class User(commands.Cog):
     async def create_invite(self, interaction: discord.Interaction, duration: int = 86400):
         await interaction.response.defer()
         channel = interaction.channel
-        if not isinstance(channel, (discord.TextChannel, discord.VoiceChannel, discord.ForumChannel, discord.StageChannel)):
+        
+        is_valid_channel = False
+        if isinstance(channel, discord.TextChannel):
+            is_valid_channel = True
+        elif isinstance(channel, discord.VoiceChannel):
+            is_valid_channel = True
+        elif isinstance(channel, discord.ForumChannel):
+            is_valid_channel = True
+        elif isinstance(channel, discord.StageChannel):
+            is_valid_channel = True
+
+        if not is_valid_channel:
             await interaction.followup.send("I cannot create an invite for this type of channel.")
             return
 
         invite = await channel.create_invite(max_age=duration, unique=True)
         
-        duration_text = "Never expires" if duration == 0 else f"Expires in <t:{int(invite.created_at.timestamp() + duration)}:R>"
+        if duration == 0:
+            duration_text = "Never expires"
+        else:
+            expiration_timestamp = int(invite.created_at.timestamp() + duration)
+            duration_text = f"Expires in <t:{expiration_timestamp}:R>"
         
         embed = discord.Embed(
             title="Invite Created",
