@@ -6,3 +6,5 @@ __pycache__
 **/__pycache__
 **/__pycache__/*
 *.pyc
+src/cogs/__pycache__
+src/cogs/__pycache__/*
