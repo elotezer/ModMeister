@@ -38,11 +38,9 @@ class Bot(commands.Bot):
             logging.info("Synced global commands")
 
     async def on_ready(self):
-        if not discord.opus.is_loaded():
-            discord.opus.load_opus('libopus.so.0')
         logging.basicConfig(level=logging.INFO)
-        logging.info("Logged is as ModMeister")
-        print("Logged is as ModMeister")
+        logging.info("Logged in as ModMeister")
+        print("Logged in as ModMeister")
 
 
 
