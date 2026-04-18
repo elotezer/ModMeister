@@ -213,8 +213,16 @@ class Music(commands.Cog):
             return
 
         state.current = next_track
-        source = discord.FFmpegPCMAudio(next_track.url, **FFMPEG_OPTIONS)
-        source = discord.PCMVolumeTransformer(source, volume=0.5)
+        
+        try:
+            source = discord.FFmpegPCMAudio(next_track.url, **FFMPEG_OPTIONS)
+            source = discord.PCMVolumeTransformer(source, volume=0.5)
+        except discord.errors.ClientException:
+            asyncio.run_coroutine_threadsafe(
+                channel.send(embed=error_embed("FFmpeg is not installed. Audio playback is unavailable.")),
+                self.bot.loop
+            )
+            return
 
         def after(error):
             if error:
