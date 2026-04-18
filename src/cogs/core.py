@@ -52,11 +52,12 @@ class Core(commands.Cog):
         embed.add_field(
             name="🎲  General",
             value=(
-                "`/ping` — Check if the bot is alive\n"
-                "`/echo` — Echo back a message\n"
-                "`/roll` — Random integer between a range\n"
-                "`/roll_f` — Random float between 0 and 1\n"
-                "`/serverinfo` — Display detailed server information"
+                "`/ping` - Check if the bot is alive\n"
+                "`/echo` - Echo back a message\n"
+                "`/roll` - Random integer between a range\n"
+                "`/roll_f` - Random float between 0 and 1\n"
+                "`/serverinfo` - Display detailed server information\n"
+                "`/invite` - Create a server invite link"
             ),
             inline=False
         )
@@ -64,8 +65,8 @@ class Core(commands.Cog):
         embed.add_field(
             name="🤖  AI",
             value=(
-                "`/gpt` — Ask ChatGPT\n"
-                "`/gemini` — Ask Gemini"
+                "`/gpt` - Ask ChatGPT\n"
+                "`/gemini` - Ask Gemini"
             ),
             inline=False
         )
@@ -73,14 +74,23 @@ class Core(commands.Cog):
         embed.add_field(
             name="🔨  Moderation",
             value=(
-                "`/admin kick` — Kick a member\n"
-                "`/admin ban` — Ban a member\n"
-                "`/admin unban` — Unban a member\n"
-                "`/admin mute` — Timeout a member for a set duration\n"
-                "`/admin unmute` — Remove a timeout from a member\n"
-                "`/admin warn` — Issue a warning to a member\n"
-                "`/admin warnings` — View all warnings for a member\n"
-                "`/admin clear_warnings` — Clear all or a specific warning"
+                "`/admin kick` - Kick a member\n"
+                "`/admin ban` - Ban a member\n"
+                "`/admin unban` - Unban a member\n"
+                "`/admin mute` - Timeout a member for a set duration\n"
+                "`/admin unmute` - Remove a timeout from a member\n"
+                "`/admin warn` - Issue a warning to a member\n"
+                "`/admin warnings` - View all warnings for a member\n"
+                "`/admin clear_warnings` - Clear all or a specific warning"
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="⚡  Punishment System",
+            value=(
+                "`/admin punishment_view` - View auto-punishment settings\n"
+                "`/admin punishment_set` - Configure warning thresholds"
             ),
             inline=False
         )
@@ -88,9 +98,9 @@ class Core(commands.Cog):
         embed.add_field(
             name="👑  Admin Management",
             value=(
-                "`/admin add` — Grant admin to a user\n"
-                "`/admin remove` — Revoke admin from a user\n"
-                "`/admin userinfo` — Full profile & history of a user"
+                "`/admin add` - Grant admin to a user\n"
+                "`/admin remove` - Revoke admin from a user\n"
+                "`/admin userinfo` - Full profile and history of a user"
             ),
             inline=False
         )
@@ -98,9 +108,9 @@ class Core(commands.Cog):
         embed.add_field(
             name="🎭  Roles",
             value=(
-                "`/admin give_role` — Give a role to a user or everyone\n"
-                "`/admin take_role` — Remove a role from a user or everyone\n"
-                "`/admin clear_roles` — Delete all deletable roles"
+                "`/admin give_role` - Give a role to a user or everyone\n"
+                "`/admin take_role` - Remove a role from a user or everyone\n"
+                "`/admin clear_roles` - Delete all deletable roles"
             ),
             inline=False
         )
@@ -108,13 +118,13 @@ class Core(commands.Cog):
         embed.add_field(
             name="📁  Channels & Categories",
             value=(
-                "`/admin new_text_ch` — Create a text channel\n"
-                "`/admin del_text_ch` — Delete a text channel\n"
-                "`/admin new_voice_ch` — Create a voice channel\n"
-                "`/admin del_voice_ch` — Delete a voice channel\n"
-                "`/admin new_category` — Create a category\n"
-                "`/admin del_category` — Delete a category\n"
-                "`/admin new_private_category` — Create an admin-only category"
+                "`/admin new_text_ch` - Create a text channel\n"
+                "`/admin del_text_ch` - Delete a text channel\n"
+                "`/admin new_voice_ch` - Create a voice channel\n"
+                "`/admin del_voice_ch` - Delete a voice channel\n"
+                "`/admin new_category` - Create a category\n"
+                "`/admin del_category` - Delete a category\n"
+                "`/admin new_private_category` - Create an admin-only category"
             ),
             inline=False
         )
@@ -122,15 +132,15 @@ class Core(commands.Cog):
         embed.add_field(
             name="🎵  Music",
             value=(
-                "`/play` — Play a SoundCloud or Spotify track/playlist\n"
-                "`/pause` — Pause the current track\n"
-                "`/resume` — Resume the paused track\n"
-                "`/skip` — Skip the current track\n"
-                "`/stop` — Stop playback and disconnect\n"
-                "`/queue` — Show the current queue\n"
-                "`/nowplaying` — Show what's currently playing\n"
-                "`/loop` — Toggle looping the current track\n"
-                "`/volume` — Set playback volume (0–100)"
+                "`/play` - Play a SoundCloud or Spotify track/playlist\n"
+                "`/pause` - Pause the current track\n"
+                "`/resume` - Resume the paused track\n"
+                "`/skip` - Skip the current track\n"
+                "`/stop` - Stop playback and disconnect\n"
+                "`/queue` - Show the current queue\n"
+                "`/nowplaying` - Show what's currently playing\n"
+                "`/loop` - Toggle looping the current track\n"
+                "`/volume` - Set playback volume (0-100)"
             ),
             inline=False
         )
@@ -138,8 +148,8 @@ class Core(commands.Cog):
         embed.add_field(
             name="🛠️  Server",
             value=(
-                "`/admin setup_server` — Wipe and rebuild a basic server layout\n"
-                "`/admin wipe` — Delete all channels and categories"
+                "`/admin setup_server` - Wipe and rebuild a basic server layout\n"
+                "`/admin wipe` - Delete all channels and categories"
             ),
             inline=False
         )
