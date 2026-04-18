@@ -22,6 +22,16 @@ cursor.execute("""
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )
 """)
+# Punishment escalation table
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS guild_punishments (
+        guild_id INTEGER PRIMARY KEY,
+        mute_threshold INTEGER DEFAULT 3,
+        mute_minutes INTEGER DEFAULT 30,
+        kick_threshold INTEGER DEFAULT 6,
+        ban_threshold INTEGER DEFAULT 8
+    )
+""")
 
 
 def success_embed(description: str) -> discord.Embed:
@@ -34,6 +44,31 @@ def error_embed(description: str) -> discord.Embed:
 
 def info_embed(title: str, description: str = "") -> discord.Embed:
     return discord.Embed(title=title, description=description, color=0x3498db)
+
+
+async def execute_punishment(interaction: discord.Interaction, user: discord.Member, punishment_type: str, reason: str):
+    try:
+        if punishment_type == "mute":
+            cursor.execute(
+                "SELECT mute_minutes FROM guild_punishments WHERE guild_id = ?",
+                (interaction.guild_id,)
+            )
+            result = cursor.fetchone()
+            minutes = result[0] if result else 30
+            
+            muted_until = discord.utils.utcnow() + timedelta(minutes=minutes)
+            await user.timeout(muted_until, reason=f"[AUTO] {reason}")
+            
+        elif punishment_type == "kick":
+            await user.kick(reason=f"[AUTO] {reason}")
+            
+        elif punishment_type == "ban":
+            await user.ban(reason=f"[AUTO] {reason}")
+            
+        return True
+    except Exception as e:
+        print(f"Could not execute {punishment_type} punishment: {e}")
+        return False
 
 
 class Admin(commands.Cog):
@@ -409,12 +444,38 @@ class Admin(commands.Cog):
         )
         total_warnings = cursor.fetchone()[0]
 
+        cursor.execute(
+            "SELECT mute_threshold, kick_threshold, ban_threshold FROM guild_punishments WHERE guild_id = ?",
+            (interaction.guild_id,)
+        )
+        result = cursor.fetchone()
+        
+        if result:
+            mute_threshold, kick_threshold, ban_threshold = result
+        else:
+            mute_threshold, kick_threshold, ban_threshold = 3, 6, 8
+
         embed = discord.Embed(title="Warning Issued", color=0xf39c12)
         embed.set_author(name=str(user), icon_url=user.display_avatar.url)
         embed.set_thumbnail(url=user.display_avatar.url)
         embed.add_field(name="Member", value=user.mention, inline=True)
         embed.add_field(name="Total Warnings", value=str(total_warnings), inline=True)
         embed.add_field(name="Reason", value=reason, inline=False)
+
+        punishment_triggered = None
+        if total_warnings >= ban_threshold:
+            await execute_punishment(interaction, user, "ban", f"Reached {ban_threshold} warnings")
+            punishment_triggered = f"🚫 **BAN** User exceeded {ban_threshold} warning threshold"
+        elif total_warnings >= kick_threshold:
+            await execute_punishment(interaction, user, "kick", f"Reached {kick_threshold} warnings")
+            punishment_triggered = f"⚠️ **KICK** User reached {kick_threshold} warning threshold"
+        elif total_warnings >= mute_threshold:
+            await execute_punishment(interaction, user, "mute", f"Reached {mute_threshold} warnings")
+            punishment_triggered = f"🔇 **MUTE** User reached {mute_threshold} warning threshold"
+
+        if punishment_triggered:
+            embed.add_field(name="⚡ Auto-Punishment", value=punishment_triggered, inline=False)
+
         embed.set_footer(text=f"Warned by {interaction.user} • ID: {user.id}", icon_url=interaction.user.display_avatar.url)
         
         await interaction.response.send_message(embed=embed)
@@ -426,6 +487,10 @@ class Admin(commands.Cog):
             )
             dm_embed.add_field(name="Reason", value=reason, inline=False)
             dm_embed.add_field(name="Total Warnings", value=str(total_warnings), inline=True)
+            
+            if punishment_triggered:
+                dm_embed.add_field(name="⚡ Auto-Action Applied", value=punishment_triggered, inline=False)
+            
             dm_embed.set_footer(text=f"Issued by {interaction.user}")
             
             await user.send(embed=dm_embed)
@@ -452,7 +517,7 @@ class Admin(commands.Cog):
             await interaction.response.send_message(embed=embed)
             return
 
-        embed = discord.Embed(title=f"Warnings — {user}", color=0xf39c12)
+        embed = discord.Embed(title=f"Warnings - {user}", color=0xf39c12)
         embed.set_thumbnail(url=user.display_avatar.url)
 
         for warning_id, reason, warned_by, timestamp in rows:
@@ -469,7 +534,7 @@ class Admin(commands.Cog):
         
         await interaction.response.send_message(embed=embed)
 
-    @admin.command(name="clear_warnings", description="Clear warnings for a member — all or a specific one by ID")
+    @admin.command(name="clear_warnings", description="Clear warnings for a member - all or a specific one by ID")
     async def clear_warnings(self, interaction: discord.Interaction, user: discord.Member, warning_id: int | None = None):
         if not self.is_admin(interaction):
             await self.send_no_permission(interaction, "clear warnings")
@@ -791,6 +856,88 @@ class Admin(commands.Cog):
         embed.set_footer(text=f"Actioned by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         
         await interaction.followup.send(embed=embed)
+
+    @admin.command(name="punishment_view", description="View the current punishment escalation settings")
+    async def punishment_view(self, interaction: discord.Interaction):
+        if not self.is_admin(interaction):
+            await self.send_no_permission(interaction, "view punishment settings")
+            return
+
+        cursor.execute(
+            "SELECT mute_threshold, mute_minutes, kick_threshold, ban_threshold FROM guild_punishments WHERE guild_id = ?",
+            (interaction.guild_id,)
+        )
+        result = cursor.fetchone()
+
+        if result:
+            mute_threshold, mute_minutes, kick_threshold, ban_threshold = result
+        else:
+            mute_threshold, mute_minutes, kick_threshold, ban_threshold = 3, 30, 6, 8
+
+        embed = info_embed("Punishment Escalation Settings", "Auto-punishment tiers for warning system")
+        embed.add_field(
+            name="🔇 Mute Tier",
+            value=f"Threshold: **{mute_threshold}** warnings\nDuration: **{mute_minutes}** minutes",
+            inline=False
+        )
+        embed.add_field(
+            name="⚠️ Kick Tier",
+            value=f"Threshold: **{kick_threshold}** warnings",
+            inline=False
+        )
+        embed.add_field(
+            name="🚫 Ban Tier",
+            value=f"Threshold: **{ban_threshold}** warnings",
+            inline=False
+        )
+        embed.set_footer(text=f"Requested by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+        
+        await interaction.response.send_message(embed=embed)
+
+    @admin.command(name="punishment_set", description="Configure punishment escalation thresholds")
+    async def punishment_set(
+        self,
+        interaction: discord.Interaction,
+        mute_warnings: int,
+        mute_minutes: int,
+        kick_warnings: int,
+        ban_warnings: int
+    ):
+        if interaction.user.id != interaction.guild.owner_id:
+            embed = error_embed("Only the server owner can configure punishment settings.")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        if not (mute_warnings < kick_warnings < ban_warnings):
+            embed = error_embed("Thresholds must be in ascending order: mute < kick < ban")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        cursor.execute(
+            "INSERT OR REPLACE INTO guild_punishments (guild_id, mute_threshold, mute_minutes, kick_threshold, ban_threshold) VALUES (?, ?, ?, ?, ?)",
+            (interaction.guild_id, mute_warnings, mute_minutes, kick_warnings, ban_warnings)
+        )
+        connection.commit()
+
+        embed = success_embed("Punishment escalation settings updated!")
+        embed.add_field(
+            name="🔇 Mute",
+            value=f"{mute_warnings} warnings → {mute_minutes} min timeout",
+            inline=False
+        )
+        embed.add_field(
+            name="⚠️ Kick",
+            value=f"{kick_warnings} warnings → Remove from server",
+            inline=False
+        )
+        embed.add_field(
+            name="🚫 Ban",
+            value=f"{ban_warnings} warnings → Ban from server",
+            inline=False
+        )
+        embed.set_footer(text=f"Set by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+        
+        await interaction.response.send_message(embed=embed)
 
 
 async def setup(bot: commands.Bot):
