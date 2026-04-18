@@ -3,8 +3,13 @@ set -e
 
 cd ~/ModMeister || exit
 
-echo "--- ModMeister Bot indítása ---"
-pm2 start modmeister-bot || pm2 start src/main.py --interpreter ./venv/bin/python3 --name "modmeister-bot"
-pm2 save
+echo "[START] Launching bot..."
+pm2 start modmeister-bot || pm2 start src/main.py --interpreter "$(pwd)/venv/bin/python3" --name "modmeister-bot"
 
-echo "--- Bot elindítva! ---"
+if [ $? -eq 0 ]; then
+    pm2 save
+    echo "[START] SUCCESS: Bot is running"
+else
+    echo "[START] ERROR: Failed to start bot"
+    exit 1
+fi

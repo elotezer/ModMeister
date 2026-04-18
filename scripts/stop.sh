@@ -1,5 +1,5 @@
 #!/bin/bash
 
-echo "--- ModMeister Bot leállítása ---"
-pm2 stop modmeister-bot
-echo "--- Bot leállítva! ---"
+echo "[STOP] Shutting down bot..."
+pm2 stop modmeister-bot 2>/dev/null || echo "[STOP] Bot not running or PM2 unavailable"
+echo "[STOP] Complete"
