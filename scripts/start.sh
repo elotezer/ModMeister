@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-cd ~/ModMeister || exit
+REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$REPO_DIR" || exit
 
 echo "[START] Launching bot..."
 pm2 start modmeister-bot || pm2 start src/main.py --interpreter "$(pwd)/venv/bin/python3" --name "modmeister-bot"

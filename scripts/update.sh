@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-cd ~/ModMeister || exit
+REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$REPO_DIR" || exit
 
 echo "[UPDATE] Starting update: $(date)"
 
@@ -12,11 +13,12 @@ if [ -n "$(git status --porcelain)" ]; then
 fi
 
 echo "[UPDATE] Pulling code..."
-if ! git pull origin main; then
+DEFAULT_BRANCH=$(git rev-parse --abbrev-ref origin/HEAD | cut -d'/' -f2)
+if ! git pull origin $DEFAULT_BRANCH; then
     echo "[UPDATE] Merge conflict detected. Force reset? (y/n)"
     read -r response
     if [ "$response" = "y" ]; then
-        git reset --hard origin/main
+        git reset --hard origin/$DEFAULT_BRANCH
         git pull
     else
         echo "[UPDATE] Update cancelled. Reverting to previous version..."
