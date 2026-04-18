@@ -8,13 +8,13 @@ ModMeister is a Discord bot that provides powerful moderation and server managem
 
 ## Features
 
-- 🛡️ **Moderation Tools**: Kick, ban, mute, unmute, and warn members with a full warning history
+- 🛡️ **Moderation Tools**: Kick, ban, mute, unmute, and warn members with full warning history and tiered punishment escalation
 - 📋 **Server Management**: Create, delete, and organize channels, categories, and roles
-- 🎵 **Music Playback**: Stream SoundCloud and Spotify tracks directly in voice channels
+- 🎵 **Music Playback**: Stream SoundCloud and Spotify tracks directly in voice channels with queue management
 - 🎲 **Fun Utilities**: Random number generators, text echoing, server info, and more
 - 🤖 **AI Integration**: Prompt ChatGPT and Google Gemini directly in Discord
-- 💾 **Data Persistence**: SQLite3 database for admins, members, and warnings
-- 📊 **Process Management**: PM2 integration for reliable bot operation
+- 💾 **Data Persistence**: SQLite3 database for admins, members, warnings, and punishment thresholds
+- 📊 **Process Management**: PM2 integration for reliable bot operation with automated recovery
 - ⚙️ **Environment Configuration**: Secure configuration via environment variables
 
 ## Tech Stack
@@ -193,7 +193,35 @@ ModMeister/
 
 > All admin commands require the Admin role or Server Owner unless stated otherwise.
 
-#### Moderation
+#### Moderation with Punishment Escalation
+
+The warning system includes automatic tiered escalation:
+
+| Command | Description |
+|---|---|
+| `/admin warn <user> <reason>` | Issue a warning to a member |
+| `/admin warnings <user>` | View all warnings for a member |
+| `/admin clear_warnings <user> [id]` | Clear all warnings or a specific one by ID |
+| `/admin punishment_view` | View current punishment thresholds for the server |
+| `/admin punishment_set <type> <threshold> <minutes>` | Configure escalation thresholds |
+
+**Punishment Escalation System:**
+- Default thresholds: 3 warnings → mute, 6 warnings → kick, 8 warnings → ban
+- Mute duration is configurable (default: 30 minutes)
+- When a warning is issued, the system automatically checks if thresholds are exceeded
+- If exceeded, the appropriate punishment is executed (mute → kick → ban progression)
+- All punishment actions are logged and users receive notification embeds
+
+**Example Configuration:**
+```
+/admin punishment_set mute 3 30        # Mute after 3 warnings for 30 minutes
+/admin punishment_set kick 6 0         # Kick after 6 warnings
+/admin punishment_set ban 8 0          # Ban after 8 warnings
+```
+
+---
+
+#### Standard Moderation
 
 | Command | Description |
 |---|---|
@@ -202,9 +230,6 @@ ModMeister/
 | `/admin unban <user>` | Unban a member |
 | `/admin mute <user> <minutes> <reason>` | Timeout a member |
 | `/admin unmute <user>` | Remove a timeout |
-| `/admin warn <user> <reason>` | Issue a warning |
-| `/admin warnings <user>` | View all warnings for a member |
-| `/admin clear_warnings <user> [id]` | Clear all warnings or a specific one by ID |
 
 #### Admin Management
 
@@ -271,6 +296,15 @@ ModMeister uses SQLite3 with the following tables:
 | `warned_by` | INTEGER | Issuing admin user ID |
 | `timestamp` | DATETIME | When the warning was issued |
 
+### `guild_punishments`
+| Column | Type | Description |
+|---|---|---|
+| `guild_id` | INTEGER | Discord server ID (primary key) |
+| `mute_threshold` | INTEGER | Warning count to trigger mute (default: 3) |
+| `kick_threshold` | INTEGER | Warning count to trigger kick (default: 6) |
+| `ban_threshold` | INTEGER | Warning count to trigger ban (default: 8) |
+| `mute_minutes` | INTEGER | Duration of mute in minutes (default: 30) |
+
 ---
 
 ## Process Management
@@ -280,12 +314,21 @@ ModMeister uses SQLite3 with the following tables:
 pm2 start src/main.py --interpreter ./venv/bin/python3 --name "modmeister-bot"
 ```
 
-**Or use the scripts**:
+**Or use the enhanced scripts** (recommended for VPS deployment):
+
 ```bash
-bash scripts/start.sh    # Start
-bash scripts/stop.sh     # Stop
-bash scripts/update.sh   # Pull latest and restart
+bash scripts/start.sh    # Start the bot with PM2
+bash scripts/stop.sh     # Stop the bot gracefully
+bash scripts/update.sh   # Pull latest code, install deps, and restart
 ```
+
+**Script Features:**
+- Auto-detect git default branch (main/master)
+- Absolute path handling (works with or without `sudo`)
+- Git conflict detection with rollback capability
+- `.env` template generation during setup
+- FFmpeg installation included in system dependencies
+- Informative status messages with `[SETUP]`, `[START]`, `[STOP]`, `[UPDATE]` prefixes
 
 **PM2 commands**:
 ```bash
@@ -294,6 +337,60 @@ pm2 logs modmeister-bot
 pm2 restart modmeister-bot
 pm2 delete modmeister-bot
 ```
+
+---
+
+## Recent Improvements (April 2026)
+
+### Music Playback Fixes
+- Fixed duplicate "Now Playing" embed on track start
+- Improved response handling to prevent "thinking" state in Discord
+- Added graceful error handling for missing FFmpeg dependency
+
+### Script Enhancements
+- Implemented relative path resolution for better cross-environment compatibility
+- Added automatic git branch detection (supports both `main` and `master`)
+- Enhanced error handling with rollback capability on failed updates
+- Added `.env` template generation during setup
+- Improved logging with keyword prefixes (`[SETUP]`, `[START]`, `[STOP]`, `[UPDATE]`)
+- Fixed Windows opus library loading issue for audio playback
+
+### Punishment System Implementation
+- Added tiered warning escalation system with configurable thresholds
+- Implemented `guild_punishments` database table for per-server settings
+- Added `/admin punishment_view` and `/admin punishment_set` commands
+- Auto-execution of punishments (mute → kick → ban) based on warning count
+- User-friendly embed notifications for punishment actions
+
+---
+
+## Troubleshooting
+
+### Bot Won't Start
+- Ensure `.env` file exists and has `TOKEN` and `GUILD` set
+- Check Python version: `python3 --version` (must be 3.10+)
+- Verify virtual environment: `source venv/bin/activate`
+- View logs: `pm2 logs modmeister-bot`
+
+### Music Commands Not Working
+- Verify FFmpeg is installed: `ffmpeg -version`
+- On Ubuntu/Debian: `sudo apt install ffmpeg`
+- On macOS: `brew install ffmpeg`
+- Ensure bot has voice permissions in channels
+
+### SoundCloud Tracks Return No Results
+- Some tracks may be region-restricted or removed
+- Try using direct SoundCloud URLs instead of search queries
+- Spotify playlists are limited to 25 tracks to prevent spam
+
+### Git Permission Error During Update
+- If `.git/objects` has wrong ownership: `sudo chown -R $USER:$USER .git`
+- Run: `bash scripts/update.sh` again
+
+### Bot Crashes After Update
+- Automatic rollback is enabled: `git reset --hard HEAD@{1}`
+- Check dependencies: `pip install -r requirements.txt`
+- Review error logs: `pm2 logs modmeister-bot --lines 50`
 
 ---
 
@@ -331,6 +428,6 @@ This project is currently unlicensed. For licensing information, please contact 
 
 ---
 
-**Last Updated**: March 2026  
-**Repository**: [elotezer/ModMeister](https://github.com/elotezer/ModMeister)  
-**Author**: [@elotezer](https://github.com/elotezer)
+**Last Updated**: April 18, 2026  
+**Repository**: [laszlokonyari/ModMeister](https://github.com/laszlokonyari/ModMeister)  
+**Author**: [@laszlokonyari](https://github.com/laszlokonyari)
