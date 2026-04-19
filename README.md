@@ -6,6 +6,8 @@ A comprehensive Discord bot for server moderation, management, music playback, a
 
 ModMeister is a Discord bot that provides powerful moderation and server management tools. It includes utilities for member management, channel and role administration, music playback via SoundCloud and Spotify, and fun commands. The bot also integrates with OpenAI's ChatGPT and Google Gemini APIs, allowing users to prompt these AI models directly from Discord.
 
+**Website**: https://modmeister.konyarilaszlo.com
+
 ## Features
 
 - 🛡️ **Moderation Tools**: Kick, ban, mute, unmute, and warn members with full warning history and tiered punishment escalation
