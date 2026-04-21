@@ -46,7 +46,8 @@ ModMeister uses Watchtower for automatic updates. Simply run these commands on y
 
    ```bash
 mkdir ModMeister && cd ModMeister
-wget https://raw.githubusercontent.com/laszlokonyari/ModMeister/main/docker-compose.yml
+
+wget https://raw.githubusercontent.com/laszlokonyari/ModMeister/master/docker-compose.yml
 touch .env botdatabase.db
 nano .env
 
