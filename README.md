@@ -268,7 +268,7 @@ ModMeister is fully containerized and uses **Watchtower** for seamless, zero-dow
 
 When you deploy the bot using the provided `docker-compose.yml` file, it pulls the latest pre-built image from the GitHub Container Registry (`ghcr.io`). Watchtower runs alongside the bot and checks the registry every 5 minutes. 
 
-If a new version of ModMeister is published to the `main` branch, Watchtower will automatically:
+If a new version of ModMeister is published to the `master` branch, Watchtower will automatically:
 1. Download the new image
 2. Gracefully shut down the old container
 3. Start the new container with your existing `.env` and `botdatabase.db`
