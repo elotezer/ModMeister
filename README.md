@@ -16,7 +16,7 @@ ModMeister is a Discord bot that provides powerful moderation and server managem
 - 🎲 **Fun Utilities**: Random number generators, text echoing, server info, and more
 - 🤖 **AI Integration**: Prompt ChatGPT and Google Gemini directly in Discord
 - 💾 **Data Persistence**: SQLite3 database for admins, members, warnings, and punishment thresholds
-- 📊 **Process Management**: PM2 integration for reliable bot operation with automated recovery
+- 📊 **Process Management**: Fully Dockerized with automatic updates via Watchtower
 - ⚙️ **Environment Configuration**: Secure configuration via environment variables
 
 ## Tech Stack
@@ -29,75 +29,29 @@ ModMeister is a Discord bot that provides powerful moderation and server managem
   - `openai` - OpenAI API client for ChatGPT prompting
   - `google-genai` - Google Gemini API client for prompting
 - **Database**: SQLite3 - Lightweight relational database
-- **Process Manager**: PM2 - Advanced application process manager
+- **Containerization**: Docker & Docker Compose
 - **Environment**: `python-dotenv` - Environment variable management
 - **Runtime**: Python 3.10+
 
 ## Requirements
 
 ### System Requirements
-- Ubuntu/Debian-based Linux system (or compatible)
-- Python 3.10+
-- FFmpeg (`sudo apt install ffmpeg`)
-- Node.js and npm (for PM2)
-- Git
-
-### Python Dependencies
-```
-dotenv~=0.9.9
-python-dotenv~=1.1.1
-discord.py[voice]
-openai
-google-genai
-yt-dlp
-spotipy
-PyNaCl
-```
+- Docker and Docker Compose
 
 ## Installation
 
-### Quick Setup (Automated)
+### Quick Setup (Plug & Play)
 
-Run the provided setup script:
+ModMeister uses Watchtower for automatic updates. Simply run these commands on your VPS:
 
-```bash
-bash scripts/setup.sh
-```
-
-### Manual Setup
-
-1. **Clone the repository**:
    ```bash
-   git clone https://github.com/elotezer/ModMeister
-   cd ModMeister
-   ```
+mkdir ModMeister && cd ModMeister
+wget https://raw.githubusercontent.com/laszlokonyari/ModMeister/main/docker-compose.yml
+touch .env botdatabase.db
+nano .env
 
-2. **Install FFmpeg**:
-   ```bash
-   sudo apt install ffmpeg
-   ```
-
-3. **Create and activate virtual environment**:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-4. **Install dependencies**:
-   ```bash
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
-
-5. **Configure environment variables**:
-   ```bash
-   touch .env
-   nano .env
-   ```
-
-6. **Run the bot**:
-   ```bash
-   python3 src/main.py
+# Once your .env is configured, start the bot:
+docker compose up -d
    ```
 
 ## Configuration
@@ -131,11 +85,6 @@ ModMeister/
 │       ├── user.py          # User commands (roll, AI prompts, serverinfo)
 │       ├── admin.py         # Admin commands (moderation, server management)
 │       └── music.py         # Music commands (play, queue, skip, etc.)
-├── scripts/
-│   ├── setup.sh             # Automated setup script
-│   ├── start.sh             # Start the bot
-│   ├── stop.sh              # Stop the bot
-│   └── update.sh            # Update the bot
 ├── requirements.txt         # Python dependencies
 ├── .env                     # Environment configuration (create after setup)
 ├── .gitignore               # Git ignore patterns
@@ -312,35 +261,24 @@ ModMeister uses SQLite3 with the following tables:
 
 ---
 
-## Process Management
+## Docker & Automatic Updates
 
-**Start with PM2**:
+ModMeister is fully containerized and uses **Watchtower** for seamless, zero-downtime updates. 
+
+When you deploy the bot using the provided `docker-compose.yml` file, it pulls the latest pre-built image from the GitHub Container Registry (`ghcr.io`). Watchtower runs alongside the bot and checks the registry every 5 minutes. 
+
+If a new version of ModMeister is published to the `main` branch, Watchtower will automatically:
+1. Download the new image
+2. Gracefully shut down the old container
+3. Start the new container with your existing `.env` and `botdatabase.db`
+4. Clean up the old, unused images
+
+**Useful Docker Commands:**
 ```bash
-pm2 start src/main.py --interpreter ./venv/bin/python3 --name "modmeister-bot"
-```
-
-**Or use the enhanced scripts** (recommended for VPS deployment):
-
-```bash
-bash scripts/start.sh    # Start the bot with PM2
-bash scripts/stop.sh     # Stop the bot gracefully
-bash scripts/update.sh   # Pull latest code, install deps, and restart
-```
-
-**Script Features:**
-- Auto-detect git default branch (main/master)
-- Absolute path handling (works with or without `sudo`)
-- Git conflict detection with rollback capability
-- `.env` template generation during setup
-- FFmpeg installation included in system dependencies
-- Informative status messages with `[SETUP]`, `[START]`, `[STOP]`, `[UPDATE]` prefixes
-
-**PM2 commands**:
-```bash
-pm2 list
-pm2 logs modmeister-bot
-pm2 restart modmeister-bot
-pm2 delete modmeister-bot
+docker compose logs -f      # View live console logs
+docker compose restart      # Manually restart the bot
+docker compose down         # Stop the bot and Watchtower
+docker compose up -d        # Start the bot in the background
 ```
 
 ---
@@ -417,7 +355,7 @@ pm2 delete modmeister-bot
 
 ## Support
 
-For issues or suggestions, open an [Issue](https://github.com/elotezer/ModMeister/issues) on GitHub and include the command used, the error received, and relevant server configuration details.
+For issues or suggestions, open an [Issue](https://github.com/laszlokonyari/ModMeister/issues) on GitHub and include the command used, the error received, and relevant server configuration details.
 
 ## License
 
@@ -429,10 +367,9 @@ This project is currently unlicensed. For licensing information, please contact 
 - Music streaming via [yt-dlp](https://github.com/yt-dlp/yt-dlp)
 - Spotify integration via [spotipy](https://spotipy.readthedocs.io/)
 - AI integration with [OpenAI API](https://openai.com/api/) and [Google Gemini](https://ai.google.dev/)
-- Process management by [PM2](https://pm2.keymetrics.io/)
 
 ---
 
-**Last Updated**: April 18, 2026  
+**Last Updated**: April 21, 2026  
 **Repository**: [laszlokonyari/ModMeister](https://github.com/laszlokonyari/ModMeister)  
 **Author**: [@laszlokonyari](https://github.com/laszlokonyari)
