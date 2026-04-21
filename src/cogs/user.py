@@ -55,6 +55,38 @@ class User(commands.Cog):
         
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.command(name="roles", description="Display a user's roles")
+    @app_commands.describe(user="The user to get roles of (defaults to you)")
+    async def roles(self, interaction: discord.Interaction, user: discord.User = None):
+        if user is None:
+            member = interaction.user
+        else:
+            member = interaction.guild.get_member(user.id)
+            if member is None:
+                await interaction.response.send_message(f"User {user.mention} is not a member of this server.")
+                return
+        
+        roles = []
+        for role in member.roles:
+            if role.name != "@everyone":
+                roles.append(role.mention)
+        
+        if not roles:
+            roles_display = "No roles"
+        else:
+            roles_display = ", ".join(roles)
+        
+        embed = discord.Embed(
+            title=f"{member.display_name}'s Roles",
+            description=roles_display,
+            color=0x3498db
+        )
+        embed.add_field(name="Total Roles", value=str(len(roles)), inline=True)
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_footer(text=f"Requested by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+        
+        await interaction.response.send_message(embed=embed)
+
     @app_commands.command(name="gpt", description="Ask ChatGPT")
     async def gpt(self, interaction: discord.Interaction, prompt: str):
         ai_client = OpenAI(api_key=GPT_KEY)
