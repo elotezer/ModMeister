@@ -39,6 +39,22 @@ class User(commands.Cog):
         
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.command(name="avatar", description="Display a user's avatar")
+    @app_commands.describe(user="The user to get the avatar of (defaults to you)")
+    async def avatar(self, interaction: discord.Interaction, user: discord.User = None):
+        if user is None:
+            user = interaction.user
+        
+        embed = discord.Embed(
+            title=f"{user.name}'s Avatar",
+            color=0x3498db
+        )
+        embed.set_image(url=user.display_avatar.url)
+        embed.add_field(name="Avatar URL", value=f"[Click here]({user.display_avatar.url})", inline=False)
+        embed.set_footer(text=f"Requested by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+        
+        await interaction.response.send_message(embed=embed)
+
     @app_commands.command(name="gpt", description="Ask ChatGPT")
     async def gpt(self, interaction: discord.Interaction, prompt: str):
         ai_client = OpenAI(api_key=GPT_KEY)
