@@ -169,7 +169,7 @@ ModMeister/
 
 ---
 
-### Music Commands
+### Music Commands 
 
 > All playback control commands require the user to be in the same voice channel as the bot.
 
