@@ -160,9 +160,12 @@ ModMeister/
 |---|---|---|
 | `/roll <x> <y>` | Random integer between a range | Everyone |
 | `/roll_f` | Random float between 0 and 1 | Everyone |
+| `/avatar [user]` | Display a user's avatar | Everyone |
+| `/roles [user]` | Display a user's roles | Everyone |
 | `/serverinfo` | Display detailed server information | Everyone |
 | `/gpt <prompt>` | Ask ChatGPT | Everyone |
 | `/gemini <prompt>` | Ask Gemini | Everyone |
+| `/invite [duration]` | Create a server invite link | Everyone |
 
 ---
 
