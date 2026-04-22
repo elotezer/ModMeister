@@ -326,8 +326,6 @@ docker compose up -d        # Start the bot in the background
 ### Bot Won't Start
 - Ensure `.env` file exists and has `TOKEN` and `GUILD` set
 - Check Python version: `python3 --version` (must be 3.10+)
-- Verify virtual environment: `source venv/bin/activate`
-- View logs: `pm2 logs modmeister-bot`
 
 ### Music Commands Not Working
 - Verify FFmpeg is installed: `ffmpeg -version`
@@ -340,14 +338,9 @@ docker compose up -d        # Start the bot in the background
 - Try using direct SoundCloud URLs instead of search queries
 - Spotify playlists are limited to 25 tracks to prevent spam
 
-### Git Permission Error During Update
-- If `.git/objects` has wrong ownership: `sudo chown -R $USER:$USER .git`
-- Run: `bash scripts/update.sh` again
-
 ### Bot Crashes After Update
 - Automatic rollback is enabled: `git reset --hard HEAD@{1}`
 - Check dependencies: `pip install -r requirements.txt`
-- Review error logs: `pm2 logs modmeister-bot --lines 50`
 
 ---
 
