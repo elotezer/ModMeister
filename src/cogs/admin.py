@@ -32,6 +32,12 @@ cursor.execute("""
         ban_threshold INTEGER DEFAULT 8
     )
 """)
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS guild_settings (
+        guild_id INTEGER PRIMARY KEY,
+        welcome_channel_id INTEGER
+    )
+""")
 
 
 def success_embed(description: str) -> discord.Embed:
@@ -937,6 +943,22 @@ class Admin(commands.Cog):
         )
         embed.set_footer(text=f"Set by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         
+        await interaction.response.send_message(embed=embed)
+
+    @admin.command(name="set_welcome_chn", description="Set the channel for welcome messages.")
+    @app_commands.describe(channel="The channel where welcome messages will be sent.")
+    async def set_welcome_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        if not self.is_admin(interaction):
+            await self.send_no_permission(interaction, "set the welcome channel")
+            return
+
+        cursor.execute(
+            "INSERT OR REPLACE INTO guild_settings (guild_id, welcome_channel_id) VALUES (?, ?)",
+            (interaction.guild_id, channel.id)
+        )
+        connection.commit()
+
+        embed = success_embed(f"Welcome channel has been set to {channel.mention}.")
         await interaction.response.send_message(embed=embed)
 
 

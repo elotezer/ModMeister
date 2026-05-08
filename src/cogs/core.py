@@ -164,8 +164,14 @@ class EventsCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        ch = get(member.guild.text_channels, name="welcome")
-        
+        cursor.execute("CREATE TABLE IF NOT EXISTS guild_settings (guild_id INTEGER PRIMARY KEY, welcome_channel_id INTEGER)")
+        cursor.execute("SELECT welcome_channel_id FROM guild_settings WHERE guild_id = ?", (member.guild.id,))
+        result = cursor.fetchone()
+
+        ch = None
+        if result and result[0]:
+            ch = member.guild.get_channel(result[0])
+
         if ch:
             embed = discord.Embed(
                 description=f"👋  Welcome to **{member.guild.name}**, {member.mention}! Glad to have you here.",
