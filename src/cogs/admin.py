@@ -945,6 +945,19 @@ class Admin(commands.Cog):
         
         await interaction.response.send_message(embed=embed)
 
+    @admin.command(name="sync", description="[Owner] Manually sync slash commands with Discord.")
+    async def sync_commands(self, interaction: discord.Interaction):
+        if interaction.user.id != interaction.guild.owner_id:
+            await self.send_no_permission(interaction, "sync slash commands")
+            return
+
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        
+        synced = await self.bot.tree.sync(guild=interaction.guild)
+        
+        embed = success_embed(f"Synced **{len(synced)}** commands to this server.")
+        await interaction.followup.send(embed=embed)
+
     @admin.command(name="set_welcome_chn", description="Set the channel for welcome messages.")
     @app_commands.describe(channel="The channel where welcome messages will be sent.")
     async def set_welcome_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
